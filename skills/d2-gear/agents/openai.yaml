@@ -1,4 +1,4 @@
 interface:
   display_name: "D2 Gear"
-  short_description: "Plan and execute safe Destiny 2 gear actions."
-  default_prompt: "Use d2-gear to plan and execute confirmed Destiny 2 item transfers."
+  short_description: "Execute Destiny 2 gear actions."
+  default_prompt: "Use d2-gear to execute Destiny 2 item transfers, previewing only when needed."

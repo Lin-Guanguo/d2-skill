@@ -251,6 +251,7 @@ export async function executeTransferPlan(options: ExecuteTransferOptions) {
   if (invalidPlans.length && !options.continueOnError) {
     return {
       ...plan,
+      dryRun: false,
       ok: false,
       executed: false,
       error: 'Transfer plan contains invalid items. Nothing was executed.',

@@ -8,6 +8,7 @@ interface TransferOptions extends AccountOptions {
   target: string;
   amount?: number;
   yes?: boolean;
+  dryRun?: boolean;
   continueOnError?: boolean;
 }
 
@@ -37,15 +38,16 @@ export function createGearCommand() {
   addAccountOptions(
     transfer
       .command('execute')
-      .description('Execute a transfer plan for one or more item instance ids')
+      .description('Execute item transfers for one or more item instance ids')
       .option('--item-id <id>', 'item instance id to transfer; repeat for multiple items', collect, [])
       .requiredOption('--target <target>', 'vault, current, class name, or character id')
       .option('--amount <count>', 'stack amount to transfer', parsePositiveInteger, 1)
-      .option('--yes', 'execute the transfer')
+      .option('--dry-run', 'build and return the transfer plan without executing')
+      .option('--yes', 'accepted for compatibility; execute is the default')
       .option('--continue-on-error', 'continue executing later item transfers after a failure'),
   ).action((options: TransferOptions) =>
     runCommand(async () => {
-      if (!options.yes) {
+      if (options.dryRun) {
         return {
           ...(await buildTransferPlan({
             membershipId: options.membershipId,
@@ -55,7 +57,7 @@ export function createGearCommand() {
             amount: options.amount,
           })),
           executed: false,
-          message: 'Transfer was not executed. Re-run with --yes to execute.',
+          message: 'Transfer was not executed because --dry-run was used.',
         };
       }
 

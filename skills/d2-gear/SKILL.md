@@ -1,11 +1,11 @@
 ---
 name: d2-gear
-description: Plan and execute safe Destiny 2 gear actions through the repo-local CLI. Use when a task needs item transfer planning, confirmed movement between character and vault, or future equip/lock actions that change game account state.
+description: Execute Destiny 2 gear actions through the repo-local CLI. Use when a task needs item movement between character and vault, transfer planning, or future equip/lock actions that change game account state.
 ---
 
 # D2 Gear
 
-Use this skill for write operations. Always plan first, then execute only after the user confirms the plan.
+Use this skill for write operations. When the user asks to move items, execute directly. Use a plan only when the user asks to preview, the target is ambiguous, or the operation is a larger batch where review would materially reduce mistakes.
 
 ## Run
 
@@ -16,19 +16,20 @@ Use this skill for write operations. Always plan first, then execute only after 
 
 ## Transfer
 
-Build a dry-run plan:
+Preview a transfer:
 
 ```bash
 test -f dist/cli.js || pnpm build
 node dist/cli.js gear transfer plan --item-id '<itemId>' --target vault
 node dist/cli.js gear transfer plan --item-id '<itemId>' --target current
+node dist/cli.js gear transfer execute --item-id '<itemId>' --target current --dry-run
 ```
 
-Execute only after user confirmation:
+Execute a transfer:
 
 ```bash
-node dist/cli.js gear transfer execute --item-id '<itemId>' --target vault --yes
-node dist/cli.js gear transfer execute --item-id '<itemId>' --target current --yes
+node dist/cli.js gear transfer execute --item-id '<itemId>' --target vault
+node dist/cli.js gear transfer execute --item-id '<itemId>' --target current
 ```
 
 Repeat `--item-id` for batch transfers. The CLI executes serially.
