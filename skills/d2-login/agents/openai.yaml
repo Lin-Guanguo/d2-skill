@@ -1,0 +1,4 @@
+interface:
+  display_name: "D2 Login"
+  short_description: "Authenticate the repo-local Destiny 2 CLI."
+  default_prompt: "Use d2-login to check or establish Destiny 2 OAuth authentication for this repository."
