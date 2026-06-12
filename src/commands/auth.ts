@@ -1,7 +1,9 @@
 import { Command } from 'commander';
 import { login, refreshStoredToken } from '../auth/oauth.js';
-import { deleteStoredToken, readTokenStatus, tokenFilePath } from '../auth/token-store.js';
+import { deleteStoredToken, readTokenStatus } from '../auth/token-store.js';
+import { tokenFilePath } from '../config/paths.js';
 import { runCommand } from '../output.js';
+import { parsePositiveInteger } from './shared-options.js';
 
 export function createAuthCommand() {
   const auth = new Command('auth').description('Manage Bungie OAuth credentials');
@@ -10,13 +12,13 @@ export function createAuthCommand() {
     .command('login')
     .description('Authorize this CLI with Bungie and store a local refresh token')
     .option('--no-open', 'do not open the system browser automatically')
-    .option('--timeout <seconds>', 'callback wait timeout in seconds', '180')
-    .action((options: { open?: boolean; timeout: string }) =>
+    .option('--timeout <seconds>', 'callback wait timeout in seconds', parsePositiveInteger, 180)
+    .action((options: { open?: boolean; timeout: number }) =>
       runCommand(
         () =>
           login({
             openBrowser: options.open !== false,
-            timeoutSeconds: Number.parseInt(options.timeout, 10),
+            timeoutSeconds: options.timeout,
             onAuthorizationUrl: (url) => {
               if (options.open === false) {
                 console.error(`Open this URL to authorize d2-skill:\n${url}`);

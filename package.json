@@ -6,12 +6,16 @@
   "bin": {
     "d2-skill": "dist/cli.js"
   },
+  "engines": {
+    "node": ">=22.13.0"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "tsx src/cli.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "bungie-api-ts": "^5.10.0",
     "commander": "^14.0.2",
     "dotenv": "^17.2.3",
     "selfsigned": "^4.0.0"

@@ -20,6 +20,8 @@ Copy `.env.example` to `.env` and fill the app values:
 
 Keep the default authorization, token, and redirect URLs unless the Bungie app registration changes. After cloning, run `pnpm install` once, then `pnpm dev auth login`.
 
+Requires Node.js `>=22.13.0`.
+
 ## Agent Usage
 
 Use Claude Code, Codex, OpenClaw, or another agent from this repository root. You can either start the agent in this directory or tell it the checkout path.
@@ -34,8 +36,16 @@ Current structure:
 
 - `src/cli.ts`: root CLI entrypoint.
 - `src/commands/`: command definitions.
+- `src/account/`: Destiny account resolution.
+- `src/bungie/`: Bungie API HTTP client.
+- `src/cache/`: local SQLite cache.
 - `src/config/`: local environment loading.
 - `src/auth/`: Bungie OAuth login, callback handling, refresh, status, and token storage.
+- `src/manifest/`: manifest loading, caching, and definition tables.
+- `src/profile/`: Bungie profile snapshot loading.
+- `src/inventory/`: owned item collection views and search.
+- `src/items/`: item detail models and inspection.
+- `src/gear/`: transfer planning and execution.
 - `src/platform/`: OS-specific helpers.
 - `src/output.ts`: shared CLI output and error handling.
 - `skills/`: agent-facing skill descriptions.
@@ -60,3 +70,34 @@ pnpm dev auth logout
 ```
 
 OAuth tokens are stored outside the repository at `~/.d2-skill/oauth-token.json`.
+
+Account commands:
+
+```bash
+node dist/cli.js account list
+```
+
+Manifest commands:
+
+```bash
+node dist/cli.js manifest update
+```
+
+Inventory and item commands:
+
+```bash
+node dist/cli.js inventory search --name Rose --details perks,stats
+node dist/cli.js inventory search --perk Incandescent --type weapon --all --details perks
+node dist/cli.js item inspect --item-id <itemInstanceId>
+```
+
+`--details perks` returns combined `perks` plus explicit `insertedPlugs` and `availablePlugs` fields.
+
+Gear commands:
+
+```bash
+node dist/cli.js gear transfer plan --item-id <itemInstanceId> --target vault
+node dist/cli.js gear transfer execute --item-id <itemInstanceId> --target current --yes
+```
+
+After a successful transfer, Bungie profile snapshots may briefly show stale item locations. Query the item again before issuing a dependent transfer, especially when doing `character -> vault -> character`.

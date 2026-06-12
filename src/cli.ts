@@ -1,6 +1,12 @@
 #!/usr/bin/env node
 import { Command, CommanderError } from 'commander';
+import { createAccountCommand } from './commands/account.js';
 import { createAuthCommand } from './commands/auth.js';
+import { createGearCommand } from './commands/gear.js';
+import { createInventoryCommand } from './commands/inventory.js';
+import { createItemCommand } from './commands/item.js';
+import { createManifestCommand } from './commands/manifest.js';
+import { printError } from './output.js';
 
 const program = new Command();
 
@@ -30,7 +36,12 @@ function configureCommandTree(command: Command) {
 }
 
 configureCommand(program);
+program.addCommand(configureCommandTree(createAccountCommand()));
 program.addCommand(configureCommandTree(createAuthCommand()));
+program.addCommand(configureCommandTree(createManifestCommand()));
+program.addCommand(configureCommandTree(createInventoryCommand()));
+program.addCommand(configureCommandTree(createItemCommand()));
+program.addCommand(configureCommandTree(createGearCommand()));
 
 try {
   await program.parseAsync();
@@ -44,6 +55,7 @@ try {
       process.exitCode = error.exitCode;
     }
   } else {
-    throw error;
+    printError(error);
+    process.exitCode = 1;
   }
 }

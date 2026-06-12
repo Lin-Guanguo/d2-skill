@@ -1,0 +1,4 @@
+interface:
+  display_name: "D2 Inventory"
+  short_description: "Search owned Destiny 2 inventory."
+  default_prompt: "Use d2-inventory to search and locate Destiny 2 items across characters and vault."

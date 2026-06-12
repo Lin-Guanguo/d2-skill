@@ -1,8 +1,7 @@
 import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
-import { chmod, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
-import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { chmod, readFile, rm, writeFile } from 'node:fs/promises';
+import { ensureDataDir, tokenFilePath } from '../config/paths.js';
 
 export interface StoredToken {
   accessToken: string;
@@ -15,12 +14,7 @@ export interface StoredToken {
   updatedAt: string;
 }
 
-const TOKEN_DIR = join(homedir(), '.d2-skill');
-const TOKEN_FILE = join(TOKEN_DIR, 'oauth-token.json');
-
-export function tokenFilePath() {
-  return TOKEN_FILE;
-}
+const TOKEN_FILE = tokenFilePath();
 
 function tokenHash(token: string) {
   return createHash('sha256').update(token).digest('hex').slice(0, 12);
@@ -40,12 +34,8 @@ export function sanitizeStoredToken(token: StoredToken) {
   };
 }
 
-async function ensureTokenDir() {
-  await mkdir(TOKEN_DIR, { recursive: true, mode: 0o700 });
-}
-
 export async function writeStoredToken(token: StoredToken) {
-  await ensureTokenDir();
+  await ensureDataDir();
   await writeFile(TOKEN_FILE, `${JSON.stringify(token, null, 2)}\n`, { mode: 0o600 });
   await chmod(TOKEN_FILE, 0o600);
 }
