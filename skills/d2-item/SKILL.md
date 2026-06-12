@@ -13,6 +13,7 @@ Use this skill for item details. Use `d2-inventory` first when the task starts w
 - Use `node dist/cli.js ...`. Run `pnpm build` when `dist/cli.js` is missing or stale.
 - Call `d2-login` first when auth is missing, expired, or rejected.
 - Parse stdout JSON only; stderr is human guidance.
+- Item, bucket, perk, and stat names use `D2_MANIFEST_LANGUAGE` from `.env`; default is `zh-chs`.
 
 ## Inspect
 

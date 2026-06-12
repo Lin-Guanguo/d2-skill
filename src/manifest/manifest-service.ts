@@ -8,6 +8,7 @@ import {
 } from 'bungie-api-ts/destiny2';
 import { readCacheJson, writeCacheJson } from '../cache/sqlite-cache.js';
 import { createBungieHttpClient } from '../bungie/http-client.js';
+import { readEnvConfig } from '../config/env.js';
 
 const ITEM_MANIFEST_TABLES: [
   'DestinyInventoryItemDefinition',
@@ -31,6 +32,10 @@ interface LoadItemManifestOptions {
 }
 
 const manifestPromises = new Map<string, Promise<ItemManifest>>();
+
+function resolveManifestLanguage(language: DestinyManifestLanguage | undefined) {
+  return language ?? readEnvConfig().manifestLanguage;
+}
 
 function tablePathVersion(manifest: DestinyManifest, language: DestinyManifestLanguage) {
   const componentPaths =
@@ -67,7 +72,7 @@ async function downloadItemManifest(language: DestinyManifestLanguage, refresh: 
 }
 
 export async function loadItemManifest(options: LoadItemManifestOptions = {}) {
-  const language = options.language ?? 'en';
+  const language = resolveManifestLanguage(options.language);
   const refresh = options.refresh ?? false;
   const promiseKey = `${language}:${refresh}`;
 
@@ -88,11 +93,12 @@ export async function loadItemManifest(options: LoadItemManifestOptions = {}) {
   return promise;
 }
 
-export async function updateItemManifest(language: DestinyManifestLanguage = 'en') {
-  const manifest = await loadItemManifest({ language, refresh: true });
+export async function updateItemManifest(language?: DestinyManifestLanguage) {
+  const resolvedLanguage = resolveManifestLanguage(language);
+  const manifest = await loadItemManifest({ language: resolvedLanguage, refresh: true });
   return {
     ok: true,
-    language,
+    language: resolvedLanguage,
     tables: ITEM_MANIFEST_TABLES satisfies DestinyManifestComponentName[],
     counts: Object.fromEntries(
       ITEM_MANIFEST_TABLES.map((table) => [table, Object.keys(manifest[table]).length]),

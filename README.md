@@ -17,6 +17,7 @@ Copy `.env.example` to `.env` and fill the app values:
 - `API_KEY`: Bungie app API key
 - `OAUTH_CLIENT_ID`: OAuth client ID
 - `OAUTH_CLIENT_SECRET`: OAuth client secret
+- `D2_MANIFEST_LANGUAGE`: Bungie manifest language for item and perk names; defaults to `zh-chs`
 
 Keep the default authorization, token, and redirect URLs unless the Bungie app registration changes. After cloning, run `pnpm install` once, then `pnpm dev auth login`.
 
@@ -81,15 +82,18 @@ Manifest commands:
 
 ```bash
 node dist/cli.js manifest update
+node dist/cli.js manifest update --language en
 ```
 
 Inventory and item commands:
 
 ```bash
-node dist/cli.js inventory search --name Rose --details perks,stats
-node dist/cli.js inventory search --perk Incandescent --type weapon --all --details perks
+node dist/cli.js inventory search --name '<localized item name>' --details perks,stats
+node dist/cli.js inventory search --perk '<localized perk name>' --type weapon --all --details perks
 node dist/cli.js item inspect --item-id <itemInstanceId>
 ```
+
+Item and perk names use `D2_MANIFEST_LANGUAGE`. The default `zh-chs` supports simplified Chinese names; set `D2_MANIFEST_LANGUAGE=en` to search English names.
 
 `--details perks` returns combined `perks` plus explicit `insertedPlugs` and `availablePlugs` fields.
 

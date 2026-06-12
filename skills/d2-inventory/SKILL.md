@@ -13,6 +13,7 @@ Use this skill to find item candidates across characters, equipped slots, and va
 - Use `node dist/cli.js ...`. Run `pnpm build` when `dist/cli.js` is missing or stale.
 - Call `d2-login` first when auth is missing, expired, or rejected.
 - Parse stdout JSON only; stderr is human guidance.
+- Item, bucket, and perk names use `D2_MANIFEST_LANGUAGE` from `.env`; default is `zh-chs`.
 
 ## Search
 
