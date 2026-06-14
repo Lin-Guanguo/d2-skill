@@ -1,9 +1,25 @@
+import { currentCommandAuditFilePath } from './audit/command-audit.js';
+
+export function withAuditPath(value: unknown) {
+  const auditPath = currentCommandAuditFilePath();
+  if (!auditPath || !isRecord(value) || value.audit !== undefined) {
+    return value;
+  }
+
+  return {
+    ...value,
+    audit: {
+      path: auditPath,
+    },
+  };
+}
+
 function printResult(value: unknown) {
-  console.log(JSON.stringify(value, null, 2));
+  console.log(JSON.stringify(withAuditPath(value), null, 2));
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function getErrorMessage(error: unknown) {
@@ -34,7 +50,7 @@ function serializeError(error: unknown) {
 }
 
 export function printError(error: unknown) {
-  const serialized = serializeError(error);
+  const serialized = withAuditPath(serializeError(error));
   console.error(JSON.stringify(serialized, null, 2));
 }
 

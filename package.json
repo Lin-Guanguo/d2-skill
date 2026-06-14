@@ -15,13 +15,17 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@resvg/resvg-js": "^2.6.2",
     "bungie-api-ts": "^5.10.0",
     "commander": "^14.0.2",
     "dotenv": "^17.2.3",
+    "react": "^19.2.7",
+    "satori": "^0.26.0",
     "selfsigned": "^4.0.0"
   },
   "devDependencies": {
     "@types/node": "^25.0.0",
+    "@types/react": "^19.2.17",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }

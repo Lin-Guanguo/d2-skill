@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync } from 'node:fs';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { auditDataDirPath } from '../config/paths.js';
@@ -6,6 +6,7 @@ import { auditDataDirPath } from '../config/paths.js';
 interface AuditState {
   argv: string[];
   command: string;
+  fileStem: string;
   cwd: string;
   startedAt: Date;
   stdoutText: string;
@@ -112,26 +113,44 @@ function auditStream(text: string): AuditStream {
   return {};
 }
 
-async function writeAuditFile(record: unknown, startedAt: Date, command: string) {
+function auditDayDir(date: Date) {
   const root = auditDataDirPath();
-  const dayDir = join(root, localDay(startedAt));
-  await mkdir(dayDir, { recursive: true, mode: 0o700 });
+  return join(root, localDay(date));
+}
 
-  const timestamp = localTimestamp(startedAt);
-  const commandName = fileSafeCommand(command);
+function makeAuditFileStem(startedAt: Date, commandName: string) {
+  const dayDir = auditDayDir(startedAt);
+  const baseStem = `${localTimestamp(startedAt)}-${commandName}`;
 
-  for (let counter = 0; ; counter += 1) {
-    const suffix = counter === 0 ? '' : `-${counter}`;
-    const path = join(dayDir, `${timestamp}-${commandName}${suffix}.json`);
-    if (existsSync(path)) {
-      continue;
+  try {
+    mkdirSync(dayDir, { recursive: true, mode: 0o700 });
+    const existingNames = new Set(readdirSync(dayDir));
+    for (let counter = 0; ; counter += 1) {
+      const suffix = counter === 0 ? '' : `-${counter}`;
+      const stem = `${baseStem}${suffix}`;
+      const existsWithSameStem = [...existingNames].some(
+        (name) => name === `${stem}.json` || name.startsWith(`${stem}-`),
+      );
+      if (!existsWithSameStem) {
+        return stem;
+      }
     }
-    await writeFile(path, `${JSON.stringify(record, null, 2)}\n`, {
-      flag: 'wx',
-      mode: 0o600,
-    });
-    return;
+  } catch {
+    return baseStem;
   }
+}
+
+async function writeAuditFile(record: unknown, state: AuditState) {
+  const path = commandAuditFilePath(state);
+  await mkdir(auditDayDir(state.startedAt), { recursive: true, mode: 0o700 });
+  await writeFile(path, `${JSON.stringify(record, null, 2)}\n`, {
+    flag: 'wx',
+    mode: 0o600,
+  });
+}
+
+function commandAuditFilePath(state: AuditState) {
+  return join(auditDayDir(state.startedAt), `${state.fileStem}.json`);
 }
 
 export function startCommandAudit(argv: string[]) {
@@ -140,9 +159,12 @@ export function startCommandAudit(argv: string[]) {
   }
 
   const startedAt = new Date();
+  const command = commandFromArgv(argv);
+  const commandName = fileSafeCommand(command);
   auditState = {
     argv,
-    command: commandFromArgv(argv),
+    command,
+    fileStem: makeAuditFileStem(startedAt, commandName),
     cwd: process.cwd(),
     startedAt,
     stdoutText: '',
@@ -158,6 +180,29 @@ export function startCommandAudit(argv: string[]) {
       }
     }),
   };
+}
+
+export function currentCommandAuditFilePath() {
+  return auditState ? commandAuditFilePath(auditState) : undefined;
+}
+
+export async function createCommandAuditArtifactPath(label: string, extension: string) {
+  const state = auditState;
+  const now = new Date();
+  const dayDir = auditDayDir(state?.startedAt ?? now);
+  await mkdir(dayDir, { recursive: true, mode: 0o700 });
+
+  const normalizedLabel = fileSafeCommand(label);
+  const normalizedExtension = extension.replace(/^\.+/, '');
+  const baseStem = state?.fileStem ?? `${localTimestamp(now)}-${normalizedLabel || 'artifact'}`;
+
+  for (let counter = 0; ; counter += 1) {
+    const suffix = counter === 0 ? '' : `-${counter}`;
+    const path = join(dayDir, `${baseStem}-${normalizedLabel}${suffix}.${normalizedExtension}`);
+    if (!existsSync(path)) {
+      return path;
+    }
+  }
 }
 
 export async function finishCommandAudit(exitCode: number) {
@@ -188,7 +233,7 @@ export async function finishCommandAudit(exitCode: number) {
   };
 
   try {
-    await writeAuditFile(record, state.startedAt, state.command);
+    await writeAuditFile(record, state);
   } catch {
     // Audit must never change CLI command behavior.
   }

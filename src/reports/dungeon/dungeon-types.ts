@@ -1,3 +1,5 @@
+import type { DestinyAccountRef } from '../../account/account-service.js';
+import type { CharacterSelector } from '../../activity/activity-service.js';
 import type { ReportClaim } from '../core/claims.js';
 
 export interface ActivityDefinitionRef {
@@ -62,4 +64,65 @@ export interface DungeonSummary {
     latestClear: DungeonRecord | null;
   };
   recent: DungeonActivitySummary[];
+}
+
+export interface DungeonWeaponAggregate {
+  referenceId: number;
+  name: string;
+  kills: number;
+  precisionKills: number;
+  activityCount: number;
+}
+
+export interface DungeonTeammateAggregate {
+  membershipId: string;
+  membershipType: number;
+  displayName: string;
+  activitiesTogether: number;
+  clearsTogether: number;
+}
+
+export interface DungeonReportPgcrWarning {
+  activityId: string;
+  error: string;
+}
+
+export interface DungeonReportJson {
+  ok: true;
+  kind: 'report-dungeon-summary';
+  version: 1;
+  generatedAt: string;
+  account: DestinyAccountRef;
+  query: {
+    character: CharacterSelector;
+    mode: 'dungeon';
+    count: number;
+    startPage: number;
+    maxPages: number;
+    recent: number;
+    refresh: boolean;
+  };
+  source: {
+    history: 'Destiny2.GetActivityHistory';
+    pgcr: 'Destiny2.GetPostGameCarnageReport';
+    manifest: 'Destiny2.GetDestinyManifestSlice';
+  };
+  completeness: {
+    historyActivities: number;
+    completedActivities: number;
+    pgcrRequested: number;
+    pgcrLoaded: number;
+    pgcrFailed: number;
+    partial: boolean;
+  };
+  rules: {
+    freshCutover: string;
+    soloFlawlessRequires: string[];
+  };
+  totals: DungeonStatBlock;
+  topWeapons: DungeonWeaponAggregate[];
+  topTeammates: DungeonTeammateAggregate[];
+  dungeons: DungeonSummary[];
+  recent: DungeonActivitySummary[];
+  warnings: DungeonReportPgcrWarning[];
 }

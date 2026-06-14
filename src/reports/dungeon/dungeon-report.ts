@@ -12,12 +12,18 @@ import type { DisplayManifest } from '../../manifest/manifest-service.js';
 import { loadDisplayManifest } from '../../manifest/manifest-service.js';
 import { claim, type ReportClaim } from '../core/claims.js';
 import { mapWithConcurrency } from '../core/async.js';
+import { defaultRenderPreset } from '../../render/render-document.js';
+import { writeRenderImage } from '../../render/render-files.js';
+import { dungeonReportToRenderDocument } from './dungeon-render.js';
 import type {
   ActivityDefinitionRef,
   DungeonActivitySummary,
+  DungeonReportJson,
   DungeonRecord,
   DungeonStatBlock,
   DungeonSummary,
+  DungeonTeammateAggregate,
+  DungeonWeaponAggregate,
 } from './dungeon-types.js';
 
 interface ActivityRow {
@@ -32,22 +38,6 @@ interface PgcrLoadResult {
   error?: string;
 }
 
-interface WeaponAggregate {
-  referenceId: number;
-  name: string;
-  kills: number;
-  precisionKills: number;
-  activityCount: number;
-}
-
-interface TeammateAggregate {
-  membershipId: string;
-  membershipType: number;
-  displayName: string;
-  activitiesTogether: number;
-  clearsTogether: number;
-}
-
 export interface DungeonReportOptions extends AccountSelection {
   character: CharacterSelector;
   count: number;
@@ -55,6 +45,7 @@ export interface DungeonReportOptions extends AccountSelection {
   pages: number;
   recent: number;
   refresh?: boolean;
+  image?: boolean;
 }
 
 const BUNGIE_BASE_URL = 'https://www.bungie.net';
@@ -79,6 +70,10 @@ function displayNameFromEntry(entry: DestinyPostGameCarnageReportEntry) {
 
 function uniqueMembershipCount(entries: readonly DestinyPostGameCarnageReportEntry[]) {
   return new Set(entries.map((entry) => entry.player.destinyUserInfo.membershipId)).size;
+}
+
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
 }
 
 function activityName(definition: DisplayManifest['DestinyActivityDefinition'][number] | undefined) {
@@ -447,7 +442,7 @@ function aggregateWeapons(
   manifest: DisplayManifest,
   account: DestinyAccountRef,
 ) {
-  const aggregates = new Map<number, WeaponAggregate>();
+  const aggregates = new Map<number, DungeonWeaponAggregate>();
 
   for (const pgcr of pgcrs) {
     const seenInActivity = new Set<number>();
@@ -487,7 +482,7 @@ function aggregateTeammates(
   pgcrsById: ReadonlyMap<string, DestinyPostGameCarnageReportData>,
   account: DestinyAccountRef,
 ) {
-  const aggregates = new Map<string, TeammateAggregate>();
+  const aggregates = new Map<string, DungeonTeammateAggregate>();
 
   for (const summary of summaries) {
     const pgcr = pgcrsById.get(summary.instanceId);
@@ -542,7 +537,7 @@ async function loadCompletedPgcrs(
     } catch (error) {
       return {
         activityId,
-        error: error instanceof Error ? error.message : String(error),
+        error: errorMessage(error),
       };
     }
   });
@@ -597,9 +592,11 @@ export async function buildDungeonReport(options: DungeonReportOptions) {
     return sum;
   }, emptyStats());
   const loadedPgcrs = [...pgcrsById.values()];
-  const pgcrFailures = pgcrResults.filter((result) => result.error);
+  const pgcrFailures = pgcrResults.filter(
+    (result): result is PgcrLoadResult & { error: string } => Boolean(result.error),
+  );
 
-  return {
+  const report = {
     ok: true,
     kind: 'report-dungeon-summary',
     version: 1,
@@ -640,5 +637,28 @@ export async function buildDungeonReport(options: DungeonReportOptions) {
       activityId: failure.activityId,
       error: failure.error,
     })),
-  };
+  } satisfies DungeonReportJson;
+
+  if (!options.image) {
+    return report;
+  }
+
+  try {
+    const artifact = await writeRenderImage(
+      dungeonReportToRenderDocument(report, defaultRenderPreset()),
+    );
+
+    return {
+      ...report,
+      artifact,
+    };
+  } catch (error) {
+    return {
+      ...report,
+      artifactError: {
+        type: 'image/png',
+        error: errorMessage(error),
+      },
+    };
+  }
 }

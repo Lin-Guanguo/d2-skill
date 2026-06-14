@@ -16,6 +16,7 @@ interface DungeonReportCommandOptions extends AccountOptions {
   pages: number;
   recent: number;
   refresh?: boolean;
+  image?: boolean;
 }
 
 export function createReportCommand() {
@@ -30,7 +31,8 @@ export function createReportCommand() {
       .option('--page <page>', 'starting history page number', parseNonNegativeInteger, 0)
       .option('--pages <pages>', 'maximum number of history pages to fetch', parsePositiveInteger, 1)
       .option('--recent <count>', 'recent activities to include', parsePositiveInteger, 20)
-      .option('--refresh', 'bypass report input caches'),
+      .option('--refresh', 'bypass report input caches')
+      .option('--image', 'write a rendered PNG report image next to the command audit file'),
   ).action((options: DungeonReportCommandOptions) =>
     runCommand(() =>
       buildDungeonReport({
@@ -42,6 +44,7 @@ export function createReportCommand() {
         pages: options.pages,
         recent: options.recent,
         refresh: options.refresh,
+        image: options.image,
       }),
     ),
   );

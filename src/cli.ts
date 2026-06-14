@@ -10,7 +10,7 @@ import { createInventoryCommand } from './commands/inventory.js';
 import { createItemCommand } from './commands/item.js';
 import { createManifestCommand } from './commands/manifest.js';
 import { createReportCommand } from './commands/report.js';
-import { printError } from './output.js';
+import { printError, withAuditPath } from './output.js';
 
 const program = new Command();
 startCommandAudit(process.argv.slice(2));
@@ -70,7 +70,7 @@ try {
       process.exitCode = 0;
     } else {
       const message = commanderErrorOutput.trim() || error.message;
-      const serialized = { ok: false, error: message };
+      const serialized = withAuditPath({ ok: false, error: message });
       console.error(JSON.stringify(serialized, null, 2));
       process.exitCode = error.exitCode;
     }
