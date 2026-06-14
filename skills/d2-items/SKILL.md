@@ -13,6 +13,7 @@ Use this skill for Destiny 2 item management. The CLI owns Bungie API calls, OAu
 - Use `node dist/cli.js ...`. Run `pnpm build` when `dist/cli.js` is missing or stale.
 - Call `d2-login` first when auth is missing, expired, or rejected.
 - Parse stdout JSON only; stderr is human guidance.
+- Use `audit.path` from stdout as the canonical saved copy for exploratory command output under `~/.d2-skill/data/`; avoid ad-hoc temp files unless a separate tool truly requires one.
 - Item, `typeName`, tier, bucket, character class, perk, and stat names use `D2_MANIFEST_LANGUAGE` from `.env`; default is `zh-chs`.
 - JSON keeps localized display fields separate from stable `value`, `hash`, or English `key` fields.
 - Batch work into the fewest useful CLI calls. Avoid per-item command loops when one `search`, `duplicates`, `inspect`, or `transfer` command accepts a batch.
@@ -27,6 +28,7 @@ Use this skill for Destiny 2 item management. The CLI owns Bungie API calls, OAu
 - Use `account list --refresh-account` when account selection or cross-save state may have changed.
 - Manifest definitions are cached locally, but loading still checks Bungie manifest metadata before using cached tables.
 - For large cleanup or roll-review sessions, prefer one broad inventory command with `--details perks` and enough `--limit` / `--all-items`, then reason over returned JSON locally.
+- For broad wishlist roll review, prefer `inventory wishlist` because it joins owned items with cached wishlist evidence in one profile snapshot while keeping the output composable.
 - After transfer execution, query affected `itemId`s again with `--refresh-profile` before dependent moves because Bungie profile snapshots and the local cache can briefly lag.
 
 ## Core Concepts
@@ -46,9 +48,10 @@ For duplicate cleanup:
 
 1. Run `wishlist list`; if needed, run `wishlist init` once before using cached wishlist evidence.
 2. Run `inventory duplicates --type weapon --details perks --limit <groups> --item-limit <items>` for exploration, or add `--all --all-items` only for full-batch analysis.
-3. For each candidate `groups[].itemHash`, run `wishlist inspect --item-hash '<itemHash>' --limit 20`.
-4. Let AI compare returned item rolls, wishlist evidence, archetype/use case, ownership, and user preference.
-5. Move only selected cleanup candidates by `itemId` with `gear transfer plan` or `gear transfer execute --target current`; the user dismantles in game.
+3. Run `inventory wishlist --type weapon --owner vault --all --min-entry-perks 2` when broad wishlist evidence is needed.
+4. For deeper source context on a candidate group, run `wishlist inspect --item-hash '<itemHash>' --limit 20`.
+5. Let AI compare returned item rolls, wishlist evidence, archetype/use case, ownership, and user preference.
+6. Move only selected cleanup candidates by `itemId` with `gear transfer plan` or `gear transfer execute --target current`; the user dismantles in game.
 
 For targeted roll review:
 
@@ -72,6 +75,7 @@ node dist/cli.js inventory search --type weapon --owner vault --details perks
 node dist/cli.js inventory search --perk '<perk name>' --type weapon --all --details perks
 node dist/cli.js inventory search --item-hash '<itemHash>' --details perks
 node dist/cli.js inventory search --item-ids '<itemId1>,<itemId2>' --details perks,stats --refresh-profile
+node dist/cli.js inventory wishlist --owner vault --type weapon --all --min-entry-perks 2
 ```
 
 Prefer `--limit` for exploratory work and `--all` only when the user asks for a full batch.
@@ -91,6 +95,7 @@ Important search fields:
 - `items[].perks`: combined socket plugs when `--details perks` is requested.
 - `items[].insertedPlugs`: currently inserted socket plugs.
 - `items[].availablePlugs`: runtime reusable plugs returned for the item.
+- `items[].wishlist`: cached wishlist evidence when using `inventory wishlist`; contains score, quality, source ids, matched perks, flags, and best matches.
 
 ## Duplicates
 
@@ -148,6 +153,12 @@ node dist/cli.js wishlist parse --url '<url>' --source-id ad-hoc --role referenc
 
 Important wishlist fields:
 
+- `wishlist.sources`: configured sources used for scoring, with role, weight, initialization, and update time.
+- `wishlist.scoring.sourceCap`: score policy; each source contributes at most its best matching entry.
+- `items[].wishlist.quality`: evidence bucket: `strong`, `solid`, `weak`, `reference-only`, `negative`, or `none`.
+- `items[].wishlist.flags.singlePerkOnly`: true when the item only has one-perk evidence and should not be treated as a strong keep.
+- `items[].wishlist.flags.referenceOnly`: true when evidence is explanatory only, not a strong keep signal.
+- `items[].wishlist.bestMatches[]`: compact matched source entries with matched perk names.
 - `sources[].initialized`: whether a configured source has cached entries.
 - `sources[].summary`: fetch metadata, content hash, entry count, warning count, and update time.
 - `entries[].sourceId`, `sourceRole`, `sourceWeight`, and `polarity`: evidence provenance for scoring.

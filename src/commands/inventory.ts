@@ -1,11 +1,13 @@
 import { ItemDetail } from '../items/item-model.js';
 import { findInventoryDuplicates } from '../inventory/inventory-duplicates.js';
 import { searchInventory } from '../inventory/inventory-search.js';
+import { matchInventoryWishlists } from '../inventory/inventory-wishlist.js';
 import { runCommand } from '../output.js';
 import {
   AccountOptions,
   D2Command,
   ProfileCacheCliOptions,
+  collect,
   parseNonNegativeInteger,
   parsePositiveInteger,
   profileCacheRequestOptions,
@@ -41,6 +43,9 @@ interface SearchOptions extends AccountOptions, ProfileCacheCliOptions {
   all?: boolean;
   itemLimit?: number;
   allItems?: boolean;
+  source?: string[];
+  minEntryPerks?: number;
+  matchLimit?: number;
 }
 
 export function createInventoryCommand() {
@@ -97,6 +102,41 @@ export function createInventoryCommand() {
           ...options,
           ...profileCacheRequestOptions(options),
           details: parseDetails(options.details),
+        }),
+      ),
+    );
+
+  inventory
+    .command('wishlist')
+    .description('Search owned items and attach cached wishlist evidence')
+    .option('--name <text>', 'case-insensitive item name substring')
+    .option('--perk <text>', 'case-insensitive inserted perk/plug name substring')
+    .option('--owner <owner>', 'vault, profile, current, class key/name, or character id')
+    .option('--bucket <bucket>', 'bucket hash or bucket name substring')
+    .option('--type <type>', 'item type name substring, numeric value, or English alias')
+    .option('--item-hash <hash>', 'exact Destiny inventory item hash', parsePositiveInteger)
+    .option('--item-id <id>', 'exact item instance id')
+    .option('--item-ids <ids>', 'comma-separated item instance ids')
+    .option('--transferable', 'only include items Bungie marks transferable')
+    .option('--equipped', 'only include equipped items')
+    .option('--details <details>', 'comma-separated extra details to include: perks,stats')
+    .option('--source <id>', 'wishlist source id to use; repeat for multiple sources', collect, [])
+    .option('--min-entry-perks <count>', 'minimum wishlist perk count required for scoring', parsePositiveInteger, 2)
+    .option('--match-limit <count>', 'maximum best matches to include per item', parseNonNegativeInteger, 5)
+    .option('--limit <count>', 'maximum items to return', parseNonNegativeInteger, 50)
+    .option('--all', 'return all matched items')
+    .accountOptions()
+    .profileCacheOptions()
+    .action((options: SearchOptions) =>
+      runCommand(() =>
+        matchInventoryWishlists({
+          ...options,
+          ...profileCacheRequestOptions(options),
+          itemIds: options.itemIds?.split(',').map((itemId: string) => itemId.trim()).filter(Boolean),
+          details: parseDetails(options.details),
+          sourceIds: options.source,
+          minEntryPerks: options.minEntryPerks,
+          matchLimit: options.matchLimit,
         }),
       ),
     );
