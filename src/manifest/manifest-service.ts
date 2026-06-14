@@ -1,6 +1,5 @@
 import {
   DestinyManifest,
-  DestinyManifestComponentName,
   DestinyManifestLanguage,
   DestinyManifestSlice,
   getDestinyManifest,
@@ -8,19 +7,8 @@ import {
 } from 'bungie-api-ts/destiny2';
 import { readCacheJson, writeCacheJson } from '../cache/sqlite-cache.js';
 import { createBungieHttpClient } from '../bungie/http-client.js';
+import { ITEM_MANIFEST_TABLES, itemManifestTables } from '../bungie/manifest-tables.js';
 import { readEnvConfig } from '../config/env.js';
-
-const ITEM_MANIFEST_TABLES: [
-  'DestinyInventoryItemDefinition',
-  'DestinyInventoryBucketDefinition',
-  'DestinyStatDefinition',
-  'DestinyDamageTypeDefinition',
-] = [
-  'DestinyInventoryItemDefinition',
-  'DestinyInventoryBucketDefinition',
-  'DestinyStatDefinition',
-  'DestinyDamageTypeDefinition',
-];
 
 const MANIFEST_CACHE_NAMESPACE = 'manifest';
 
@@ -63,7 +51,7 @@ async function downloadItemManifest(language: DestinyManifestLanguage, refresh: 
 
   const slice = await getDestinyManifestSlice(http, {
     destinyManifest: manifest.Response,
-    tableNames: ITEM_MANIFEST_TABLES,
+    tableNames: itemManifestTables(),
     language,
   });
 
@@ -99,7 +87,7 @@ export async function updateItemManifest(language?: DestinyManifestLanguage) {
   return {
     ok: true,
     language: resolvedLanguage,
-    tables: ITEM_MANIFEST_TABLES satisfies DestinyManifestComponentName[],
+    tables: ITEM_MANIFEST_TABLES,
     counts: Object.fromEntries(
       ITEM_MANIFEST_TABLES.map((table) => [table, Object.keys(manifest[table]).length]),
     ),

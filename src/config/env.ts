@@ -1,6 +1,8 @@
 import { config as loadDotenv } from 'dotenv';
 import { destinyManifestLanguages, type DestinyManifestLanguage } from 'bungie-api-ts/destiny2';
 
+export type ManifestLanguage = DestinyManifestLanguage;
+
 export interface EnvConfig {
   apiKey: string;
   authorizationUrl: string;

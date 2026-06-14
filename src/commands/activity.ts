@@ -1,5 +1,9 @@
 import { Command, InvalidArgumentError } from 'commander';
-import { DestinyActivityModeType } from 'bungie-api-ts/destiny2';
+import {
+  activityModeAliases,
+  type ActivityMode,
+  parseActivityModeValue,
+} from '../activity/activity-modes.js';
 import {
   getRawActivityHistory,
   getRawPostGameCarnageReport,
@@ -12,29 +16,9 @@ import {
   parsePositiveInteger,
 } from './shared-options.js';
 
-const ACTIVITY_MODE_ALIASES: Record<string, DestinyActivityModeType> = {
-  none: DestinyActivityModeType.None,
-  story: DestinyActivityModeType.Story,
-  strike: DestinyActivityModeType.Strike,
-  raid: DestinyActivityModeType.Raid,
-  pvp: DestinyActivityModeType.AllPvP,
-  allpvp: DestinyActivityModeType.AllPvP,
-  patrol: DestinyActivityModeType.Patrol,
-  pve: DestinyActivityModeType.AllPvE,
-  allpve: DestinyActivityModeType.AllPvE,
-  nightfall: DestinyActivityModeType.Nightfall,
-  ironbanner: DestinyActivityModeType.IronBanner,
-  gambit: DestinyActivityModeType.Gambit,
-  dungeon: DestinyActivityModeType.Dungeon,
-  trials: DestinyActivityModeType.TrialsOfOsiris,
-  trialsofosiris: DestinyActivityModeType.TrialsOfOsiris,
-  dares: DestinyActivityModeType.Dares,
-  lostsector: DestinyActivityModeType.LostSector,
-};
-
 interface HistoryOptions extends AccountOptions {
   character: string;
-  mode?: DestinyActivityModeType;
+  mode?: ActivityMode;
   count: number;
   page: number;
   pages: number;
@@ -44,21 +28,11 @@ interface PgcrOptions {
   activityId: string;
 }
 
-function normalizeModeName(value: string) {
-  return value.toLowerCase().replace(/[\s_-]/g, '');
-}
-
 function parseActivityMode(value: string) {
-  if (/^\d+$/.test(value)) {
-    return Number(value) as DestinyActivityModeType;
-  }
-
-  const mode = ACTIVITY_MODE_ALIASES[normalizeModeName(value)];
+  const mode = parseActivityModeValue(value);
   if (mode === undefined) {
     throw new InvalidArgumentError(
-      `Unknown activity mode "${value}". Use a numeric DestinyActivityModeType or one of: ${Object.keys(
-        ACTIVITY_MODE_ALIASES,
-      ).join(', ')}.`,
+      `Unknown activity mode "${value}". Use a numeric DestinyActivityModeType or one of: ${activityModeAliases().join(', ')}.`,
     );
   }
   return mode;

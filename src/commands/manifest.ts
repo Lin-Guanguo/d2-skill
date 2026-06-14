@@ -1,11 +1,10 @@
 import { Command } from 'commander';
-import { DestinyManifestLanguage } from 'bungie-api-ts/destiny2';
-import { parseManifestLanguage } from '../config/env.js';
+import { type ManifestLanguage, parseManifestLanguage } from '../config/env.js';
 import { updateItemManifest } from '../manifest/manifest-service.js';
 import { runCommand } from '../output.js';
 
 interface UpdateOptions {
-  language?: DestinyManifestLanguage;
+  language?: ManifestLanguage;
 }
 
 export function createManifestCommand() {

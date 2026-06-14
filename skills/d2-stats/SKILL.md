@@ -19,6 +19,8 @@ List characters:
 node dist/cli.js character list
 ```
 
+Character display fields are structured objects. Use `characters[].class.name`, `race.name`, and `gender.name` for localized display, and use `value`/`hash`/`key` fields for stable logic.
+
 Fetch activity history:
 
 ```bash

@@ -13,7 +13,8 @@ Use this skill for Destiny 2 item management. The CLI owns Bungie API calls, OAu
 - Use `node dist/cli.js ...`. Run `pnpm build` when `dist/cli.js` is missing or stale.
 - Call `d2-login` first when auth is missing, expired, or rejected.
 - Parse stdout JSON only; stderr is human guidance.
-- Item, bucket, perk, and stat names use `D2_MANIFEST_LANGUAGE` from `.env`; default is `zh-chs`.
+- Item, type, tier, bucket, character class, perk, and stat names use `D2_MANIFEST_LANGUAGE` from `.env`; default is `zh-chs`.
+- JSON display objects keep localized `name` separate from stable `value`, `hash`, or `key` fields.
 
 ## Search
 
@@ -33,8 +34,12 @@ Important search fields:
 
 - `items[].itemId`: item instance id. `null` means the item is not supported for transfer.
 - `items[].owner`: `vault`, `profile`, or a character id/class label.
+- `items[].type`: item type with Bungie enum `value` and localized `name`.
+- `items[].tier`: item tier with Bungie enum `value`, manifest `hash`, and localized `name`.
+- `items[].location`: current item location with Bungie enum `value` and English `key`.
 - `items[].bucket`: logical item bucket such as Kinetic Weapons.
 - `items[].locationBucket`: current Bungie location bucket.
+- `characters[].class`: character class with Bungie enum `value`, manifest `hash`, English `key`, and localized `name`.
 - `items[].perks`: combined socket plugs when `--details perks` is requested.
 - `items[].insertedPlugs`: currently inserted socket plugs.
 - `items[].availablePlugs`: runtime reusable plugs returned for the item.
@@ -57,6 +62,9 @@ Important inspect fields:
 - `items[].availablePlugs`: runtime reusable plugs returned for the item.
 - `items[].stats`: item stats.
 - `items[].owner`: current holder or vault.
+- `items[].type`: item type with Bungie enum `value` and localized `name`.
+- `items[].tier`: item tier with Bungie enum `value`, manifest `hash`, and localized `name`.
+- `items[].location`: current item location with Bungie enum `value` and English `key`.
 - `items[].bucket`: logical item bucket.
 
 ## Transfer
@@ -80,6 +88,7 @@ node dist/cli.js gear transfer execute --item-id '<itemId>' --target current
 ```
 
 Repeat `--item-id` for batch transfers. The CLI executes serially.
+Transfer targets accept `vault`, `current`, a character id, a class English key such as `hunter`, or the localized class name from the current manifest language.
 
 After executing a transfer, verify item location before issuing a dependent move:
 

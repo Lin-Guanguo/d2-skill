@@ -15,6 +15,15 @@
 - Send progress, browser instructions, warnings, and recovery hints to stderr.
 - Preserve output fields once skills depend on them; add fields instead of renaming when practical.
 
+## Bungie API and Manifest Boundaries
+
+- Use `bungie-api-ts` enums for Bungie protocol values, API parameters, bitmasks, and comparisons.
+- Do not create full enum-to-label maps for user-facing text.
+- Use manifest definitions and manifest shortcut display fields for localized names whenever a hash or display field exists.
+- Keep profile component sets and manifest table sets centralized under `src/bungie/` or `src/manifest/`.
+- For new JSON output, separate stable identifiers (`value`, `hash`, `key`) from localized display names (`name`).
+- Use English for technical keys, CLI aliases, and fallback diagnostics when Bungie does not provide manifest-localized text.
+
 ## Skill Boundaries
 
 - Extend an existing skill when the new workflow belongs to the same capability area.

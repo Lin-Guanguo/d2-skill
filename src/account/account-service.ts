@@ -1,10 +1,11 @@
 import {
   BungieMembershipType,
-  DestinyProfileUserInfoCard,
+  type DestinyProfileUserInfoCard,
   getLinkedProfiles,
 } from 'bungie-api-ts/destiny2';
 import { readStoredToken } from '../auth/token-store.js';
 import { createAuthenticatedBungieHttpClient } from '../bungie/http-client.js';
+import { membershipTypeLabel } from '../bungie/value-labels.js';
 
 export interface DestinyAccountRef {
   membershipId: string;
@@ -20,24 +21,6 @@ export interface DestinyAccountRef {
 export interface AccountSelection {
   membershipId?: string;
   membershipType?: number;
-}
-
-const PLATFORM_LABELS: Record<number, string> = {
-  [BungieMembershipType.None]: 'None',
-  [BungieMembershipType.TigerXbox]: 'Xbox',
-  [BungieMembershipType.TigerPsn]: 'PlayStation',
-  [BungieMembershipType.TigerSteam]: 'Steam',
-  [BungieMembershipType.TigerBlizzard]: 'Blizzard',
-  [BungieMembershipType.TigerStadia]: 'Stadia',
-  [BungieMembershipType.TigerEgs]: 'Epic',
-  [BungieMembershipType.TigerDemon]: 'Demon',
-  [BungieMembershipType.GoliathGame]: 'Marathon',
-  [BungieMembershipType.BungieNext]: 'Bungie.net',
-  [BungieMembershipType.All]: 'All',
-};
-
-export function membershipTypeLabel(membershipType: number) {
-  return PLATFORM_LABELS[membershipType] ?? `MembershipType(${membershipType})`;
 }
 
 function formatBungieName(profile: DestinyProfileUserInfoCard) {

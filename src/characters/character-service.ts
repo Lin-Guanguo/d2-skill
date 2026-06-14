@@ -1,25 +1,45 @@
 import {
-  DestinyCharacterComponent,
-  DestinyClass,
-  DestinyComponentType,
-  DestinyGender,
-  DestinyProfileResponse,
-  DestinyRace,
+  type DestinyCharacterComponent,
+  type DestinyClass,
+  type DestinyGender,
+  type DestinyProfileResponse,
+  type DestinyRace,
   getProfile,
 } from 'bungie-api-ts/destiny2';
-import { AccountSelection, DestinyAccountRef, resolveDestinyAccount } from '../account/account-service.js';
+import {
+  type AccountSelection,
+  type DestinyAccountRef,
+  resolveDestinyAccount,
+} from '../account/account-service.js';
 import { createAuthenticatedBungieHttpClient } from '../bungie/http-client.js';
+import {
+  CHARACTER_PROFILE_COMPONENTS,
+  characterProfileComponents,
+} from '../bungie/profile-components.js';
+import {
+  characterClassRef,
+  characterGenderRef,
+  characterRaceRef,
+} from '../manifest/display-labels.js';
+import { type ItemManifest, loadItemManifest } from '../manifest/manifest-service.js';
 
 export interface CharacterListOptions extends AccountSelection {}
 
+export interface CharacterManifestRef<T extends number = number> {
+  value: T;
+  hash: number;
+  name: string;
+}
+
+export interface CharacterClassRef extends CharacterManifestRef<DestinyClass> {
+  key: string;
+}
+
 export interface CharacterSummary {
   characterId: string;
-  classType: DestinyClass;
-  className: string;
-  raceType: DestinyRace;
-  raceName: string;
-  genderType: DestinyGender;
-  genderName: string;
+  class: CharacterClassRef;
+  race: CharacterManifestRef<DestinyRace>;
+  gender: CharacterManifestRef<DestinyGender>;
   light: number;
   dateLastPlayed: string;
   minutesPlayedTotal: number;
@@ -35,28 +55,6 @@ export interface CharacterProfileSnapshot {
   currentCharacter: CharacterSummary;
 }
 
-const CHARACTER_COMPONENTS = [DestinyComponentType.Profiles, DestinyComponentType.Characters];
-
-const CLASS_LABELS: Record<number, string> = {
-  [DestinyClass.Titan]: 'Titan',
-  [DestinyClass.Hunter]: 'Hunter',
-  [DestinyClass.Warlock]: 'Warlock',
-  [DestinyClass.Unknown]: 'Unknown',
-};
-
-const RACE_LABELS: Record<number, string> = {
-  [DestinyRace.Human]: 'Human',
-  [DestinyRace.Awoken]: 'Awoken',
-  [DestinyRace.Exo]: 'Exo',
-  [DestinyRace.Unknown]: 'Unknown',
-};
-
-const GENDER_LABELS: Record<number, string> = {
-  [DestinyGender.Male]: 'Male',
-  [DestinyGender.Female]: 'Female',
-  [DestinyGender.Unknown]: 'Unknown',
-};
-
 function parseMinutes(value: string) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
@@ -68,15 +66,12 @@ function latestCharacter(characters: CharacterSummary[]) {
   )[0];
 }
 
-function summarizeCharacter(character: DestinyCharacterComponent): CharacterSummary {
+function summarizeCharacter(character: DestinyCharacterComponent, manifest: ItemManifest): CharacterSummary {
   return {
     characterId: character.characterId,
-    classType: character.classType,
-    className: CLASS_LABELS[character.classType] ?? `Class(${character.classType})`,
-    raceType: character.raceType,
-    raceName: RACE_LABELS[character.raceType] ?? `Race(${character.raceType})`,
-    genderType: character.genderType,
-    genderName: GENDER_LABELS[character.genderType] ?? `Gender(${character.genderType})`,
+    class: characterClassRef(manifest, character),
+    race: characterRaceRef(manifest, character),
+    gender: characterGenderRef(manifest, character),
     light: character.light,
     dateLastPlayed: character.dateLastPlayed,
     minutesPlayedTotal: parseMinutes(character.minutesPlayedTotal),
@@ -91,15 +86,18 @@ export async function loadCharacterProfile(
 ): Promise<CharacterProfileSnapshot> {
   const account = await resolveDestinyAccount(selection);
   const http = await createAuthenticatedBungieHttpClient();
-  const profileResponse = await getProfile(http, {
-    destinyMembershipId: account.membershipId,
-    membershipType: account.membershipType,
-    components: CHARACTER_COMPONENTS,
-  });
+  const [profileResponse, manifest] = await Promise.all([
+    getProfile(http, {
+      destinyMembershipId: account.membershipId,
+      membershipType: account.membershipType,
+      components: characterProfileComponents(),
+    }),
+    loadItemManifest(),
+  ]);
 
   const profile = profileResponse.Response;
   const rawCharacters = Object.values(profile.characters?.data ?? {});
-  const characters = rawCharacters.map(summarizeCharacter).sort(
+  const characters = rawCharacters.map((character) => summarizeCharacter(character, manifest)).sort(
     (a, b) => Date.parse(b.dateLastPlayed || '0') - Date.parse(a.dateLastPlayed || '0'),
   );
 
@@ -127,7 +125,7 @@ export async function listCharacters(selection: CharacterListOptions = {}) {
     characters: snapshot.characters,
     source: {
       endpoint: 'Destiny2.GetProfile',
-      components: CHARACTER_COMPONENTS,
+      components: CHARACTER_PROFILE_COMPONENTS,
       raw: 'bungie',
     },
     response: snapshot.profile,

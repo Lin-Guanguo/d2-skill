@@ -1,6 +1,7 @@
-import { AccountSelection } from '../account/account-service.js';
+import type { AccountSelection } from '../account/account-service.js';
 import { buildInventoryView } from './inventory-view.js';
-import { ItemDetail, PublicItem } from '../items/item-model.js';
+import type { ItemDetail, PublicItem } from '../items/item-model.js';
+import { itemTypeAliasValue } from '../items/item-type-aliases.js';
 import { loadInventorySnapshot } from '../profile/profile-service.js';
 
 export interface InventorySearchOptions extends AccountSelection {
@@ -73,11 +74,16 @@ function typeMatches(item: PublicItem, type: string | undefined) {
   }
 
   const normalizedType = normalizeText(type);
-  if (['weapon', 'armor', 'mod', 'consumable', 'engram', 'emblem', 'ghost'].includes(normalizedType)) {
-    return normalizeText(item.itemType) === normalizedType;
+  const aliasedItemType = itemTypeAliasValue(normalizedType);
+  if (aliasedItemType !== undefined) {
+    return item.type.value === aliasedItemType;
   }
 
-  return includesText(item.typeName, type) || includesText(item.itemType, type);
+  if (/^\d+$/.test(type)) {
+    return item.type.value === Number(type);
+  }
+
+  return includesText(item.type.name, type);
 }
 
 function itemIdMatches(item: PublicItem, itemId: string | undefined, itemIds: string[] | undefined) {

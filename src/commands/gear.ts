@@ -21,7 +21,7 @@ export function createGearCommand() {
       .command('plan')
       .description('Build a dry-run transfer plan for one or more item instance ids')
       .option('--item-id <id>', 'item instance id to transfer; repeat for multiple items', collect, [])
-      .requiredOption('--target <target>', 'vault, current, class name, or character id')
+      .requiredOption('--target <target>', 'vault, current, class key/name, or character id')
       .option('--amount <count>', 'stack amount to transfer', parsePositiveInteger, 1),
   ).action((options: TransferOptions) =>
     runCommand(() =>
@@ -40,7 +40,7 @@ export function createGearCommand() {
       .command('execute')
       .description('Execute item transfers for one or more item instance ids')
       .option('--item-id <id>', 'item instance id to transfer; repeat for multiple items', collect, [])
-      .requiredOption('--target <target>', 'vault, current, class name, or character id')
+      .requiredOption('--target <target>', 'vault, current, class key/name, or character id')
       .option('--amount <count>', 'stack amount to transfer', parsePositiveInteger, 1)
       .option('--dry-run', 'build and return the transfer plan without executing')
       .option('--yes', 'accepted for compatibility; execute is the default')

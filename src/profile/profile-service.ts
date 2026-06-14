@@ -1,45 +1,22 @@
+import { type DestinyProfileResponse, getProfile } from 'bungie-api-ts/destiny2';
 import {
-  DestinyComponentType,
-  DestinyProfileResponse,
-  getProfile,
-} from 'bungie-api-ts/destiny2';
-import { AccountSelection, DestinyAccountRef, resolveDestinyAccount } from '../account/account-service.js';
+  type AccountSelection,
+  type DestinyAccountRef,
+  resolveDestinyAccount,
+} from '../account/account-service.js';
 import { createAuthenticatedBungieHttpClient } from '../bungie/http-client.js';
-import { ItemManifest, loadItemManifest } from '../manifest/manifest-service.js';
+import {
+  type InventoryProfileComponentOptions,
+  inventoryProfileComponents,
+} from '../bungie/profile-components.js';
+import { type ItemManifest, loadItemManifest } from '../manifest/manifest-service.js';
 
-const INVENTORY_COMPONENTS = [
-  DestinyComponentType.Profiles,
-  DestinyComponentType.Characters,
-  DestinyComponentType.ProfileInventories,
-  DestinyComponentType.CharacterInventories,
-  DestinyComponentType.CharacterEquipment,
-  DestinyComponentType.ItemInstances,
-];
-
-export interface InventorySnapshotOptions {
-  includeItemStats?: boolean;
-  includeItemSockets?: boolean;
-  includeItemReusablePlugs?: boolean;
-}
+export type InventorySnapshotOptions = InventoryProfileComponentOptions;
 
 export interface InventorySnapshot {
   account: DestinyAccountRef;
   profile: DestinyProfileResponse;
   manifest: ItemManifest;
-}
-
-function inventoryComponents(options: InventorySnapshotOptions) {
-  const components = [...INVENTORY_COMPONENTS];
-  if (options.includeItemStats) {
-    components.push(DestinyComponentType.ItemStats);
-  }
-  if (options.includeItemSockets) {
-    components.push(DestinyComponentType.ItemSockets);
-  }
-  if (options.includeItemReusablePlugs) {
-    components.push(DestinyComponentType.ItemReusablePlugs);
-  }
-  return components;
 }
 
 function assertInventoryComponents(profile: DestinyProfileResponse) {
@@ -64,7 +41,7 @@ export async function loadInventorySnapshot(
     getProfile(http, {
       destinyMembershipId: account.membershipId,
       membershipType: account.membershipType,
-      components: inventoryComponents(options),
+      components: inventoryProfileComponents(options),
     }),
     loadItemManifest(),
   ]);

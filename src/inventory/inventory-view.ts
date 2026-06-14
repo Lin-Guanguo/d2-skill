@@ -1,33 +1,40 @@
 import {
-  DestinyCharacterComponent,
-  DestinyClass,
-  DestinyInventoryItemDefinition,
-  DestinyItemComponent,
-  DestinyItemInstanceComponent,
-  DestinyItemPlugBase,
-  DestinyItemSocketState,
-  DestinyItemType,
-  DestinyStat,
+  type DestinyCharacterComponent,
+  type DestinyClass,
+  type DestinyInventoryItemDefinition,
+  type DestinyItemComponent,
+  type DestinyItemInstanceComponent,
+  type DestinyItemPlugBase,
+  type DestinyItemSocketState,
+  type DestinyStat,
   ItemLocation,
   ItemState,
   TransferStatuses,
 } from 'bungie-api-ts/destiny2';
-import { InventorySnapshot } from '../profile/profile-service.js';
+import { itemLocationRef } from '../bungie/value-labels.js';
 import {
-  InventoryItemRecord,
-  ItemDetail,
-  itemTypeName,
+  characterClassRef,
+  itemTierRef,
+  itemTypeRef,
+} from '../manifest/display-labels.js';
+import type { InventorySnapshot } from '../profile/profile-service.js';
+import {
+  type InventoryItemRecord,
+  type ItemDetail,
   normalizeStatName,
-  PublicItem,
-  PublicItemOwner,
-  PublicPerk,
-  tierName,
+  type PublicItem,
+  type PublicItemOwner,
+  type PublicPerk,
 } from '../items/item-model.js';
 
 export interface PublicCharacter {
   characterId: string;
-  classType: DestinyClass;
-  className: string;
+  class: {
+    value: DestinyClass;
+    hash: number;
+    key: string;
+    name: string;
+  };
   light: number;
   dateLastPlayed: string;
   current: boolean;
@@ -37,34 +44,6 @@ export interface InventoryView {
   profileMintedAt: string;
   characters: PublicCharacter[];
   items: InventoryItemRecord[];
-}
-
-function className(classType: DestinyClass) {
-  switch (classType) {
-    case DestinyClass.Titan:
-      return 'Titan';
-    case DestinyClass.Hunter:
-      return 'Hunter';
-    case DestinyClass.Warlock:
-      return 'Warlock';
-    default:
-      return 'Unknown';
-  }
-}
-
-function locationName(location: ItemLocation) {
-  switch (location) {
-    case ItemLocation.Inventory:
-      return 'inventory';
-    case ItemLocation.Vault:
-      return 'vault';
-    case ItemLocation.Vendor:
-      return 'vendor';
-    case ItemLocation.Postmaster:
-      return 'postmaster';
-    default:
-      return 'unknown';
-  }
 }
 
 function displayName(definition: DestinyInventoryItemDefinition | undefined) {
@@ -78,7 +57,8 @@ function bucketName(snapshot: InventorySnapshot, bucketHash: number) {
   );
 }
 
-function normalizeCharacters(characters: { [key: string]: DestinyCharacterComponent }) {
+function normalizeCharacters(snapshot: InventorySnapshot) {
+  const characters = snapshot.profile.characters.data ?? {};
   const latest = Object.values(characters).reduce(
     (current, character) =>
       Date.parse(character.dateLastPlayed) > Date.parse(current)
@@ -89,8 +69,7 @@ function normalizeCharacters(characters: { [key: string]: DestinyCharacterCompon
 
   return Object.values(characters).map((character) => ({
     characterId: character.characterId,
-    classType: character.classType,
-    className: className(character.classType),
+    class: characterClassRef(snapshot.manifest, character),
     light: character.light,
     dateLastPlayed: character.dateLastPlayed,
     current: character.dateLastPlayed === latest,
@@ -115,7 +94,7 @@ function ownerForCharacter(character: PublicCharacter): PublicItemOwner {
   return {
     type: 'character',
     id: character.characterId,
-    label: character.className,
+    label: character.class.name,
   };
 }
 
@@ -292,12 +271,11 @@ function normalizeItem(
     itemId,
     itemHash: raw.itemHash,
     name: displayName(definition),
-    typeName: definition?.itemTypeDisplayName || itemTypeName(definition?.itemType ?? DestinyItemType.None),
-    itemType: itemTypeName(definition?.itemType ?? DestinyItemType.None),
-    tier: tierName(definition?.inventory?.tierType),
+    type: itemTypeRef(definition),
+    tier: itemTierRef(snapshot.manifest, definition),
     quantity: raw.quantity,
     owner,
-    location: locationName(raw.location),
+    location: itemLocationRef(raw.location),
     bucket: {
       hash: normalBucketHash,
       name: bucketName(snapshot, normalBucketHash),
@@ -326,8 +304,7 @@ function normalizeItem(
 
 export function buildInventoryView(snapshot: InventorySnapshot, requestedDetails: ItemDetail[] = []) {
   const details = new Set(requestedDetails);
-  const characterData = snapshot.profile.characters.data ?? {};
-  const characters = normalizeCharacters(characterData);
+  const characters = normalizeCharacters(snapshot);
   const characterById = new Map(characters.map((character) => [character.characterId, character]));
   const items: InventoryItemRecord[] = [];
 

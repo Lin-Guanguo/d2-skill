@@ -1,8 +1,8 @@
 import { transferItem } from 'bungie-api-ts/destiny2';
-import { AccountSelection } from '../account/account-service.js';
+import type { AccountSelection } from '../account/account-service.js';
 import { createAuthenticatedBungieHttpClient, BungieApiError } from '../bungie/http-client.js';
-import { buildInventoryView, PublicCharacter } from '../inventory/inventory-view.js';
-import { InventoryItemRecord, PublicItem } from '../items/item-model.js';
+import { buildInventoryView, type PublicCharacter } from '../inventory/inventory-view.js';
+import type { InventoryItemRecord, PublicItem } from '../items/item-model.js';
 import { loadInventorySnapshot } from '../profile/profile-service.js';
 
 export interface TransferOptions extends AccountSelection {
@@ -59,7 +59,8 @@ function resolveTarget(target: string, characters: PublicCharacter[]): TransferT
   const character =
     characters.find((candidate) => candidate.characterId === target) ??
     characters.find((candidate) => normalized === 'current' && candidate.current) ??
-    characters.find((candidate) => normalizeText(candidate.className) === normalized);
+    characters.find((candidate) => candidate.class.key === normalized) ??
+    characters.find((candidate) => normalizeText(candidate.class.name) === normalized);
 
   if (!character) {
     throw new Error(`Unknown transfer target "${target}". Use "vault", "current", a class name, or a character id.`);
@@ -68,7 +69,7 @@ function resolveTarget(target: string, characters: PublicCharacter[]): TransferT
   return {
     type: 'character',
     id: character.characterId,
-    label: character.className,
+    label: character.class.name,
   };
 }
 
@@ -104,7 +105,7 @@ function buildItemPlan(
     return planError(itemId, 'MissingItemId', 'Only instanced items are supported in this transfer version.', item);
   }
 
-  if (item.location === 'postmaster') {
+  if (item.location.key === 'postmaster') {
     return planError(itemId, 'UnsupportedLocation', 'Postmaster pulls are not supported yet.', item);
   }
 

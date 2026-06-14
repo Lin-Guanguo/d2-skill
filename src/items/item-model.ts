@@ -1,4 +1,4 @@
-import { DestinyItemComponent, DestinyItemType, DestinyStat, TierType } from 'bungie-api-ts/destiny2';
+import type { DestinyItemComponent, DestinyStat } from 'bungie-api-ts/destiny2';
 
 export type ItemDetail = 'perks' | 'stats';
 
@@ -8,17 +8,30 @@ export interface PublicItemOwner {
   label: string;
 }
 
+export interface PublicNamedValue {
+  value: number | null;
+  name: string;
+}
+
+export interface PublicManifestValue extends PublicNamedValue {
+  hash: number | null;
+}
+
+export interface PublicKeyedValue {
+  value: number;
+  key: string;
+}
+
 export interface PublicItem {
   key: string;
   itemId: string | null;
   itemHash: number;
   name: string;
-  typeName: string;
-  itemType: string;
-  tier: string;
+  type: PublicNamedValue;
+  tier: PublicManifestValue;
   quantity: number;
   owner: PublicItemOwner;
-  location: string;
+  location: PublicKeyedValue;
   bucket: {
     hash: number;
     name: string;
@@ -63,55 +76,6 @@ export interface InventoryItemRecord {
   item: PublicItem;
   raw: DestinyItemComponent;
   ownerCharacterId?: string;
-}
-
-const ITEM_TYPE_LABELS: Record<number, string> = {
-  [DestinyItemType.None]: 'None',
-  [DestinyItemType.Currency]: 'Currency',
-  [DestinyItemType.Armor]: 'Armor',
-  [DestinyItemType.Weapon]: 'Weapon',
-  [DestinyItemType.Message]: 'Message',
-  [DestinyItemType.Engram]: 'Engram',
-  [DestinyItemType.Consumable]: 'Consumable',
-  [DestinyItemType.ExchangeMaterial]: 'ExchangeMaterial',
-  [DestinyItemType.MissionReward]: 'MissionReward',
-  [DestinyItemType.QuestStep]: 'QuestStep',
-  [DestinyItemType.QuestStepComplete]: 'QuestStepComplete',
-  [DestinyItemType.Emblem]: 'Emblem',
-  [DestinyItemType.Quest]: 'Quest',
-  [DestinyItemType.Subclass]: 'Subclass',
-  [DestinyItemType.ClanBanner]: 'ClanBanner',
-  [DestinyItemType.Aura]: 'Aura',
-  [DestinyItemType.Mod]: 'Mod',
-  [DestinyItemType.Dummy]: 'Dummy',
-  [DestinyItemType.Ship]: 'Ship',
-  [DestinyItemType.Vehicle]: 'Vehicle',
-  [DestinyItemType.Emote]: 'Emote',
-  [DestinyItemType.Ghost]: 'Ghost',
-  [DestinyItemType.Package]: 'Package',
-  [DestinyItemType.Bounty]: 'Bounty',
-  [DestinyItemType.Wrapper]: 'Wrapper',
-  [DestinyItemType.SeasonalArtifact]: 'SeasonalArtifact',
-  [DestinyItemType.Finisher]: 'Finisher',
-  [DestinyItemType.Pattern]: 'Pattern',
-};
-
-const TIER_LABELS: Record<number, string> = {
-  [TierType.Unknown]: 'Unknown',
-  [TierType.Currency]: 'Currency',
-  [TierType.Basic]: 'Basic',
-  [TierType.Common]: 'Common',
-  [TierType.Rare]: 'Rare',
-  [TierType.Superior]: 'Legendary',
-  [TierType.Exotic]: 'Exotic',
-};
-
-export function itemTypeName(itemType: DestinyItemType) {
-  return ITEM_TYPE_LABELS[itemType] ?? `ItemType(${itemType})`;
-}
-
-export function tierName(tierType: TierType | undefined) {
-  return tierType === undefined ? 'Unknown' : (TIER_LABELS[tierType] ?? `Tier(${tierType})`);
 }
 
 export function normalizeStatName(statHash: number, stat: DestinyStat, name: string | undefined): PublicStat {
