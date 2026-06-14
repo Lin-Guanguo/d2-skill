@@ -34,7 +34,8 @@ function serializeError(error: unknown) {
 }
 
 export function printError(error: unknown) {
-  console.error(JSON.stringify(serializeError(error), null, 2));
+  const serialized = serializeError(error);
+  console.error(JSON.stringify(serialized, null, 2));
 }
 
 export async function runCommand(action: () => Promise<unknown>) {

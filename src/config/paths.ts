@@ -16,6 +16,10 @@ export function cacheDatabasePath() {
   return join(DATA_DIR, 'cache.sqlite');
 }
 
+export function auditDataDirPath() {
+  return join(DATA_DIR, 'data');
+}
+
 export async function ensureDataDir() {
   await mkdir(DATA_DIR, { recursive: true, mode: 0o700 });
 }

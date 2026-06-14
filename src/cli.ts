@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { Command, CommanderError } from 'commander';
+import { finishCommandAudit, startCommandAudit } from './audit/command-audit.js';
 import { createAccountCommand } from './commands/account.js';
 import { createActivityCommand } from './commands/activity.js';
 import { createAuthCommand } from './commands/auth.js';
@@ -12,6 +13,7 @@ import { createReportCommand } from './commands/report.js';
 import { printError } from './output.js';
 
 const program = new Command();
+startCommandAudit(process.argv.slice(2));
 
 program
   .name('d2-skill')
@@ -38,6 +40,17 @@ function configureCommandTree(command: Command) {
   return command;
 }
 
+function numericExitCode() {
+  if (typeof process.exitCode === 'number') {
+    return process.exitCode;
+  }
+  if (typeof process.exitCode === 'string') {
+    const parsed = Number(process.exitCode);
+    return Number.isFinite(parsed) ? parsed : 1;
+  }
+  return 0;
+}
+
 configureCommand(program);
 program.addCommand(configureCommandTree(createAccountCommand()));
 program.addCommand(configureCommandTree(createCharacterCommand()));
@@ -57,11 +70,14 @@ try {
       process.exitCode = 0;
     } else {
       const message = commanderErrorOutput.trim() || error.message;
-      console.error(JSON.stringify({ ok: false, error: message }, null, 2));
+      const serialized = { ok: false, error: message };
+      console.error(JSON.stringify(serialized, null, 2));
       process.exitCode = error.exitCode;
     }
   } else {
     printError(error);
     process.exitCode = 1;
   }
+} finally {
+  await finishCommandAudit(numericExitCode());
 }

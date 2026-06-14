@@ -75,6 +75,12 @@ pnpm dev auth logout
 
 OAuth tokens are stored outside the repository at `~/.d2-skill/oauth-token.json`.
 
+Each CLI run writes an audit record outside the repository at
+`~/.d2-skill/data/yyyyMMdd/yyyyMMddHHmmssSSS-command.json`, for example
+`~/.d2-skill/data/20260614/20260614160130091-auth-path.json`. The record includes
+the request arguments and response metadata, with `response.stdout` and
+`response.stderr` stored as either `{ "json": ... }` or `{ "text": "..." }`.
+
 Account commands:
 
 ```bash
