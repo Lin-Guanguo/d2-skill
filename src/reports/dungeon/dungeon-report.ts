@@ -8,6 +8,7 @@ import {
 import { getRawActivityHistory, loadPostGameCarnageReport } from '../../activity/activity-service.js';
 import type { CharacterSelector } from '../../activity/activity-service.js';
 import type { AccountSelection, DestinyAccountRef } from '../../account/account-service.js';
+import { readSettings } from '../../config/settings.js';
 import type { DisplayManifest } from '../../manifest/manifest-service.js';
 import { loadDisplayManifest } from '../../manifest/manifest-service.js';
 import { claim, type ReportClaim } from '../core/claims.js';
@@ -39,17 +40,16 @@ interface PgcrLoadResult {
 }
 
 export interface DungeonReportOptions extends AccountSelection {
-  character: CharacterSelector;
-  count: number;
-  page: number;
-  pages: number;
-  recent: number;
+  character?: CharacterSelector;
+  count?: number;
+  page?: number;
+  pages?: number;
+  recent?: number;
   refresh?: boolean;
   image?: boolean;
 }
 
 const BUNGIE_BASE_URL = 'https://www.bungie.net';
-const PGCR_CONCURRENCY = 4;
 const FRESH_SIGNAL_CUTOVER_MS = Date.parse('2022-02-22T17:00:00.000Z');
 
 function valueOf(
@@ -521,10 +521,11 @@ function aggregateTeammates(
 async function loadCompletedPgcrs(
   completedRows: readonly ActivityRow[],
   refresh: boolean | undefined,
+  concurrency: number,
 ) {
   const activityIds = [...new Set(completedRows.map((row) => row.activity.activityDetails.instanceId))];
 
-  return mapWithConcurrency(activityIds, PGCR_CONCURRENCY, async (activityId): Promise<PgcrLoadResult> => {
+  return mapWithConcurrency(activityIds, concurrency, async (activityId): Promise<PgcrLoadResult> => {
     try {
       return {
         activityId,
@@ -544,23 +545,38 @@ async function loadCompletedPgcrs(
 }
 
 export async function buildDungeonReport(options: DungeonReportOptions) {
+  const dungeonSettings = readSettings().reports.dungeon;
+  const effectiveOptions = {
+    ...options,
+    character: options.character ?? dungeonSettings.history.character,
+    count: options.count ?? dungeonSettings.history.count,
+    page: options.page ?? dungeonSettings.history.page,
+    pages: options.pages ?? dungeonSettings.history.pages,
+    recent: options.recent ?? dungeonSettings.history.recent,
+    pgcrConcurrency: dungeonSettings.pgcrConcurrency,
+  };
+
   const [history, manifest] = await Promise.all([
     getRawActivityHistory({
-      membershipId: options.membershipId,
-      membershipType: options.membershipType,
-      character: options.character,
+      membershipId: effectiveOptions.membershipId,
+      membershipType: effectiveOptions.membershipType,
+      character: effectiveOptions.character,
       mode: DestinyActivityModeType.Dungeon,
-      count: options.count,
-      page: options.page,
-      pages: options.pages,
+      count: effectiveOptions.count,
+      page: effectiveOptions.page,
+      pages: effectiveOptions.pages,
       useCache: true,
-      refresh: options.refresh,
+      refresh: effectiveOptions.refresh,
     }),
-    loadDisplayManifest({ refresh: options.refresh }),
+    loadDisplayManifest({ refresh: effectiveOptions.refresh }),
   ]);
   const rows = flattenHistory(history);
   const completedRows = rows.filter((row) => completedFromValues(row.activity.values));
-  const pgcrResults = await loadCompletedPgcrs(completedRows, options.refresh);
+  const pgcrResults = await loadCompletedPgcrs(
+    completedRows,
+    effectiveOptions.refresh,
+    effectiveOptions.pgcrConcurrency,
+  );
   const pgcrsById = new Map(
     pgcrResults
       .filter((result): result is PgcrLoadResult & { pgcr: DestinyPostGameCarnageReportData } =>
@@ -603,13 +619,13 @@ export async function buildDungeonReport(options: DungeonReportOptions) {
     generatedAt: new Date().toISOString(),
     account: history.account,
     query: {
-      character: options.character,
+      character: effectiveOptions.character,
       mode: 'dungeon',
-      count: options.count,
-      startPage: options.page,
-      maxPages: options.pages,
-      recent: options.recent,
-      refresh: options.refresh ?? false,
+      count: effectiveOptions.count,
+      startPage: effectiveOptions.page,
+      maxPages: effectiveOptions.pages,
+      recent: effectiveOptions.recent,
+      refresh: effectiveOptions.refresh ?? false,
     },
     source: {
       history: 'Destiny2.GetActivityHistory',
@@ -632,14 +648,14 @@ export async function buildDungeonReport(options: DungeonReportOptions) {
     topWeapons: aggregateWeapons(loadedPgcrs, manifest, history.account),
     topTeammates: aggregateTeammates(summaries, pgcrsById, history.account),
     dungeons: dungeonSummaries,
-    recent: summaries.slice(0, options.recent),
+    recent: summaries.slice(0, effectiveOptions.recent),
     warnings: pgcrFailures.map((failure) => ({
       activityId: failure.activityId,
       error: failure.error,
     })),
   } satisfies DungeonReportJson;
 
-  if (!options.image) {
+  if (!effectiveOptions.image) {
     return report;
   }
 

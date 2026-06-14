@@ -100,7 +100,6 @@ Report commands:
 
 ```bash
 node dist/cli.js report dungeon
-node dist/cli.js report dungeon --count 250 --pages 1 --recent 20
 node dist/cli.js report dungeon --refresh
 node dist/cli.js report dungeon --image
 ```

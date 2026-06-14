@@ -8,7 +8,7 @@ import {
 import { readCacheJson, writeCacheJson } from '../cache/sqlite-cache.js';
 import { createBungieHttpClient } from '../bungie/http-client.js';
 import { DISPLAY_MANIFEST_TABLES, displayManifestTables } from '../bungie/manifest-tables.js';
-import { readEnvConfig } from '../config/env.js';
+import { readSettings } from '../config/settings.js';
 
 const MANIFEST_CACHE_NAMESPACE = 'manifest';
 
@@ -22,7 +22,7 @@ interface LoadDisplayManifestOptions {
 const manifestPromises = new Map<string, Promise<DisplayManifest>>();
 
 function resolveManifestLanguage(language: DestinyManifestLanguage | undefined) {
-  return language ?? readEnvConfig().manifestLanguage;
+  return language ?? readSettings().manifestLanguage;
 }
 
 function tablePathVersion(manifest: DestinyManifest, language: DestinyManifestLanguage) {

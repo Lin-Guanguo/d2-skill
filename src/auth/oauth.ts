@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto';
 import { URL, URLSearchParams } from 'node:url';
-import { readEnvConfig } from '../config/env.js';
+import { readSettings } from '../config/settings.js';
 import { openInBrowser } from '../platform/open-browser.js';
 import { waitForAuthorizationCode } from './callback-server.js';
 import {
@@ -56,11 +56,11 @@ function tokenAuthHeader(clientId: string, clientSecret: string) {
 }
 
 async function requestToken(body: URLSearchParams): Promise<BungieTokenResponse> {
-  const config = readEnvConfig();
-  const response = await fetch(config.tokenUrl, {
+  const settings = readSettings();
+  const response = await fetch(settings.tokenUrl, {
     method: 'POST',
     headers: {
-      Authorization: tokenAuthHeader(config.clientId, config.clientSecret),
+      Authorization: tokenAuthHeader(settings.clientId, settings.clientSecret),
       'Content-Type': 'application/x-www-form-urlencoded',
     },
     body,
@@ -87,22 +87,22 @@ async function requestToken(body: URLSearchParams): Promise<BungieTokenResponse>
 }
 
 function buildAuthorizationUrl(state: string) {
-  const config = readEnvConfig();
-  const url = new URL(config.authorizationUrl);
-  url.searchParams.set('client_id', config.clientId);
+  const settings = readSettings();
+  const url = new URL(settings.authorizationUrl);
+  url.searchParams.set('client_id', settings.clientId);
   url.searchParams.set('response_type', 'code');
   url.searchParams.set('state', state);
-  url.searchParams.set('redirect_uri', config.redirectUri);
+  url.searchParams.set('redirect_uri', settings.redirectUri);
   return url.toString();
 }
 
 export async function login(options: LoginOptions) {
-  const config = readEnvConfig();
+  const settings = readSettings();
   const state = randomBytes(24).toString('base64url');
   const authorizationUrl = buildAuthorizationUrl(state);
   const callbackPromise = waitForAuthorizationCode({
     expectedState: state,
-    redirectUri: config.redirectUri,
+    redirectUri: settings.redirectUri,
     timeoutSeconds: options.timeoutSeconds,
   });
 
@@ -118,7 +118,7 @@ export async function login(options: LoginOptions) {
       new URLSearchParams({
         grant_type: 'authorization_code',
         code,
-        redirect_uri: config.redirectUri,
+        redirect_uri: settings.redirectUri,
       }),
     ),
   );

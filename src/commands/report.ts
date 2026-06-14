@@ -10,11 +10,11 @@ import {
 } from './shared-options.js';
 
 interface DungeonReportCommandOptions extends AccountOptions {
-  character: string;
-  count: number;
-  page: number;
-  pages: number;
-  recent: number;
+  character?: string;
+  count?: number;
+  page?: number;
+  pages?: number;
+  recent?: number;
   refresh?: boolean;
   image?: boolean;
 }
@@ -26,11 +26,11 @@ export function createReportCommand() {
     report
       .command('dungeon')
       .description('Build a dungeon performance summary report')
-      .option('--character <character>', 'current, all, or character id', 'all')
-      .option('--count <count>', 'activities per page, max 250', parseMax250Count, 250)
-      .option('--page <page>', 'starting history page number', parseNonNegativeInteger, 0)
-      .option('--pages <pages>', 'maximum number of history pages to fetch', parsePositiveInteger, 1)
-      .option('--recent <count>', 'recent activities to include', parsePositiveInteger, 20)
+      .option('--character <character>', 'current, all, or character id')
+      .option('--count <count>', 'activities per page, max 250', parseMax250Count)
+      .option('--page <page>', 'starting history page number', parseNonNegativeInteger)
+      .option('--pages <pages>', 'maximum number of history pages to fetch', parsePositiveInteger)
+      .option('--recent <count>', 'recent activities to include', parsePositiveInteger)
       .option('--refresh', 'bypass report input caches')
       .option('--image', 'write a rendered PNG report image next to the command audit file'),
   ).action((options: DungeonReportCommandOptions) =>

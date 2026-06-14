@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { type ManifestLanguage, parseManifestLanguage } from '../config/env.js';
+import { type ManifestLanguage, parseManifestLanguage } from '../config/settings.js';
 import { updateDisplayManifest } from '../manifest/manifest-service.js';
 import { runCommand } from '../output.js';
 

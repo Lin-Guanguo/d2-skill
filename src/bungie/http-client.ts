@@ -2,7 +2,7 @@ import type { HttpClient, HttpClientConfig, ServerResponse } from 'bungie-api-ts
 import { PlatformErrorCodes } from 'bungie-api-ts/destiny2';
 import { refreshStoredToken } from '../auth/oauth.js';
 import { readStoredToken } from '../auth/token-store.js';
-import { readEnvConfig } from '../config/env.js';
+import { readSettings } from '../config/settings.js';
 
 const TOKEN_REFRESH_SKEW_MS = 2 * 60 * 1000;
 const MAX_THROTTLE_RETRIES = 3;
@@ -125,7 +125,7 @@ function throttleDelayMs(error: BungieApiError, attempt: number) {
 }
 
 export function createBungieHttpClient(accessToken?: string): HttpClient {
-  const config = readEnvConfig();
+  const settings = readSettings();
 
   return async <T>(request: HttpClientConfig): Promise<T> => {
     const endpoint = buildUrl(request);
@@ -136,7 +136,7 @@ export function createBungieHttpClient(accessToken?: string): HttpClient {
           method: request.method,
           headers: {
             Accept: 'application/json',
-            'X-API-Key': config.apiKey,
+            'X-API-Key': settings.apiKey,
             ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined),
             ...(request.body ? { 'Content-Type': 'application/json' } : undefined),
           },
