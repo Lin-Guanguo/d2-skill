@@ -4,10 +4,6 @@ import {
   type DestinyStatsGroupType,
   type PeriodType,
 } from 'bungie-api-ts/destiny2';
-import {
-  activityModeAliases,
-  parseActivityModeValue,
-} from '../activity/activity-modes.js';
 import { runCommand } from '../output.js';
 import {
   getAggregateActivityStats,
@@ -21,6 +17,7 @@ import {
   periodTypeAliases,
   statsGroupAliases,
 } from '../stats/stats-model.js';
+import { collectActivityMode } from './activity-mode-options.js';
 import {
   AccountOptions,
   D2Command,
@@ -40,21 +37,6 @@ interface StatsCliOptions extends AccountOptions, ProfileCacheCliOptions {
   dayend?: string;
   limit?: number;
   all?: boolean;
-}
-
-function parseActivityMode(value: string) {
-  const mode = parseActivityModeValue(value);
-  if (mode === undefined) {
-    throw new InvalidArgumentError(
-      `Unknown activity mode "${value}". Use a numeric DestinyActivityModeType or one of: ${activityModeAliases().join(', ')}.`,
-    );
-  }
-  return mode;
-}
-
-function collectActivityMode(value: string, previous: DestinyActivityModeType[]) {
-  previous.push(parseActivityMode(value));
-  return previous;
 }
 
 function parseStatsGroup(value: string) {

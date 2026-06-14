@@ -5,6 +5,7 @@ import { createAccountCommand } from './commands/account.js';
 import { createActivityCommand } from './commands/activity.js';
 import { createAuthCommand } from './commands/auth.js';
 import { createCharacterCommand } from './commands/character.js';
+import { createClanCommand } from './commands/clan.js';
 import { createGearCommand } from './commands/gear.js';
 import { createInfoCommand } from './commands/info.js';
 import { createInventoryCommand } from './commands/inventory.js';
@@ -62,6 +63,7 @@ function numericExitCode() {
 configureCommand(program);
 program.addCommand(configureCommandTree(createAccountCommand()));
 program.addCommand(configureCommandTree(createCharacterCommand()));
+program.addCommand(configureCommandTree(createClanCommand()));
 program.addCommand(configureCommandTree(createAuthCommand()));
 program.addCommand(configureCommandTree(createManifestCommand()));
 program.addCommand(configureCommandTree(createProfileCommand()));
