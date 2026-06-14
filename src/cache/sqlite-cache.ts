@@ -16,6 +16,34 @@ type DatabaseSyncInstance = InstanceType<DatabaseSyncConstructor>;
 let database: DatabaseSyncInstance | undefined;
 let databaseReady: Promise<DatabaseSyncInstance> | undefined;
 
+function isSqliteLocked(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  return message.includes('database is locked') || message.includes('SQLITE_BUSY');
+}
+
+function wait(ms: number) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+async function retrySqliteLocked<T>(operation: () => T) {
+  let delayMs = 75;
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    try {
+      return operation();
+    } catch (error) {
+      if (!isSqliteLocked(error) || attempt === 7) {
+        throw error;
+      }
+      await wait(delayMs);
+      delayMs *= 2;
+    }
+  }
+
+  return operation();
+}
+
 async function importSqlite() {
   const originalEmitWarning = process.emitWarning;
   process.emitWarning = function emitWarningWithoutSqliteExperimentalWarning(warning, ...args) {
@@ -53,11 +81,11 @@ async function openDatabase() {
     const path = cacheDatabasePath();
     const existed = existsSync(path);
     const { DatabaseSync } = await importSqlite();
-    const db = new DatabaseSync(path);
+    const db = await retrySqliteLocked(() => new DatabaseSync(path));
 
-    db.exec(`
+    await retrySqliteLocked(() => db.exec(`
       PRAGMA journal_mode = WAL;
-      PRAGMA busy_timeout = 5000;
+      PRAGMA busy_timeout = 30000;
 
       CREATE TABLE IF NOT EXISTS cache_entries (
         namespace TEXT NOT NULL,
@@ -70,7 +98,7 @@ async function openDatabase() {
 
       CREATE INDEX IF NOT EXISTS idx_cache_entries_expires_at
         ON cache_entries(expires_at);
-    `);
+    `));
 
     if (!existed) {
       chmodSync(path, 0o600);
@@ -78,7 +106,10 @@ async function openDatabase() {
 
     database = db;
     return db;
-  })();
+  })().catch((error) => {
+    databaseReady = undefined;
+    throw error;
+  });
 
   return databaseReady;
 }
@@ -93,9 +124,11 @@ function isExpired(expiresAt: string | null) {
 
 export async function readCacheJson<T>(namespace: string, key: string): Promise<T | undefined> {
   const db = await openDatabase();
-  const row = db
-    .prepare('SELECT value_json, expires_at FROM cache_entries WHERE namespace = ? AND key = ?')
-    .get(namespace, key) as CacheRow | undefined;
+  const row = await retrySqliteLocked(() =>
+    db
+      .prepare('SELECT value_json, expires_at FROM cache_entries WHERE namespace = ? AND key = ?')
+      .get(namespace, key) as CacheRow | undefined,
+  );
 
   if (!row) {
     return undefined;
@@ -116,24 +149,30 @@ export async function writeCacheJson(
   options: CacheSetOptions = {},
 ) {
   const db = await openDatabase();
-  db.prepare(
-    [
-      'INSERT INTO cache_entries (namespace, key, value_json, updated_at, expires_at)',
-      'VALUES (?, ?, ?, ?, ?)',
-      'ON CONFLICT(namespace, key) DO UPDATE SET',
-      'value_json = excluded.value_json,',
-      'updated_at = excluded.updated_at,',
-      'expires_at = excluded.expires_at',
-    ].join(' '),
-  ).run(namespace, key, JSON.stringify(value), nowIso(), options.expiresAt ?? null);
+  await retrySqliteLocked(() =>
+    db.prepare(
+      [
+        'INSERT INTO cache_entries (namespace, key, value_json, updated_at, expires_at)',
+        'VALUES (?, ?, ?, ?, ?)',
+        'ON CONFLICT(namespace, key) DO UPDATE SET',
+        'value_json = excluded.value_json,',
+        'updated_at = excluded.updated_at,',
+        'expires_at = excluded.expires_at',
+      ].join(' '),
+    ).run(namespace, key, JSON.stringify(value), nowIso(), options.expiresAt ?? null),
+  );
 }
 
 export async function deleteCacheEntry(namespace: string, key: string) {
   const db = await openDatabase();
-  db.prepare('DELETE FROM cache_entries WHERE namespace = ? AND key = ?').run(namespace, key);
+  await retrySqliteLocked(() =>
+    db.prepare('DELETE FROM cache_entries WHERE namespace = ? AND key = ?').run(namespace, key),
+  );
 }
 
 export async function deleteCacheNamespace(namespace: string) {
   const db = await openDatabase();
-  db.prepare('DELETE FROM cache_entries WHERE namespace = ?').run(namespace);
+  await retrySqliteLocked(() =>
+    db.prepare('DELETE FROM cache_entries WHERE namespace = ?').run(namespace),
+  );
 }
