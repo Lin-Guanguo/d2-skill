@@ -13,6 +13,7 @@ import { createLoadoutCommand } from './commands/loadout.js';
 import { createManifestCommand } from './commands/manifest.js';
 import { createProfileCommand } from './commands/profile.js';
 import { createReportCommand } from './commands/report.js';
+import { createSocketCommand } from './commands/socket.js';
 import { createVendorCommand } from './commands/vendor.js';
 import { D2Command } from './commands/shared-options.js';
 import { createWishlistCommand } from './commands/wishlist.js';
@@ -70,6 +71,7 @@ program.addCommand(configureCommandTree(createInfoCommand()));
 program.addCommand(configureCommandTree(createActivityCommand()));
 program.addCommand(configureCommandTree(createGearCommand()));
 program.addCommand(configureCommandTree(createReportCommand()));
+program.addCommand(configureCommandTree(createSocketCommand()));
 program.addCommand(configureCommandTree(createVendorCommand()));
 program.addCommand(configureCommandTree(createWishlistCommand()));
 
