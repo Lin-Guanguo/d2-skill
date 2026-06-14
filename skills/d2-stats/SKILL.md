@@ -17,6 +17,7 @@ List characters:
 
 ```bash
 node dist/cli.js character list
+node dist/cli.js character list --refresh-profile
 ```
 
 Character display fields are structured objects. Use `characters[].class.name`, `race.name`, and `gender.name` for localized display, and use `value`/`hash`/`key` fields for stable logic.
@@ -26,6 +27,7 @@ Fetch activity history:
 ```bash
 node dist/cli.js activity history --character current --mode dungeon --count 50
 node dist/cli.js activity history --character all --mode raid --count 250 --pages 2
+node dist/cli.js activity history --character current --mode dungeon --count 50 --refresh-profile
 ```
 
 Fetch one post game carnage report:
@@ -38,6 +40,7 @@ Build an analyzed dungeon summary:
 
 ```bash
 node dist/cli.js report dungeon
+node dist/cli.js report dungeon --refresh
 node dist/cli.js report dungeon --image
 ```
 
@@ -45,7 +48,8 @@ node dist/cli.js report dungeon --image
 
 - `activity history` is faster and returns Bungie history pages.
 - `activity pgcr` returns one detailed activity report.
-- `report dungeon` uses cached history and PGCR inputs and returns analyzed JSON.
+- `character list` and `activity history --character current` use a cached character profile by default; use `--refresh-profile` when current-character resolution must be exact.
+- `report dungeon` uses cached history and PGCR inputs and returns analyzed JSON. Use `--refresh` when fresh report inputs matter.
 - Commands include `audit.path` in stdout JSON; use it to reopen the saved command output if the terminal output is gone.
 - `report dungeon --image` writes a shareable PNG beside the command audit file and returns its path in `artifact.path`.
 - If `artifactError` is present, use the returned report JSON; retry only when the image is required.

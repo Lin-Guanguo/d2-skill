@@ -10,10 +10,11 @@ import { createInventoryCommand } from './commands/inventory.js';
 import { createItemCommand } from './commands/item.js';
 import { createManifestCommand } from './commands/manifest.js';
 import { createReportCommand } from './commands/report.js';
+import { D2Command } from './commands/shared-options.js';
 import { createWishlistCommand } from './commands/wishlist.js';
 import { printError, withAuditPath } from './output.js';
 
-const program = new Command();
+const program = new D2Command();
 startCommandAudit(process.argv.slice(2));
 
 program

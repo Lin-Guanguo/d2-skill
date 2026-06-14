@@ -1,23 +1,29 @@
-import { type DestinyProfileResponse, getProfile } from 'bungie-api-ts/destiny2';
+import type { DestinyProfileResponse } from 'bungie-api-ts/destiny2';
 import {
   type AccountSelection,
   type DestinyAccountRef,
   resolveDestinyAccount,
 } from '../account/account-service.js';
-import { createAuthenticatedBungieHttpClient } from '../bungie/http-client.js';
 import {
   type InventoryProfileComponentOptions,
   inventoryProfileComponents,
 } from '../bungie/profile-components.js';
 import { type DisplayManifest, loadDisplayManifest } from '../manifest/manifest-service.js';
+import {
+  loadCachedProfile,
+  type ProfileCacheOptions,
+  type ProfileCacheSummary,
+} from './profile-cache.js';
 
-export type InventorySnapshotOptions = InventoryProfileComponentOptions;
+export type InventorySnapshotOptions = InventoryProfileComponentOptions & ProfileCacheOptions;
 
 export interface InventorySnapshot {
   account: DestinyAccountRef;
   profile: DestinyProfileResponse;
   manifest: DisplayManifest;
+  profileCache: ProfileCacheSummary;
 }
+const DEFAULT_INVENTORY_PROFILE_CACHE_TTL_SECONDS = 300;
 
 function assertInventoryComponents(profile: DestinyProfileResponse) {
   if (!profile.profileInventory?.data || !profile.characterInventories?.data) {
@@ -36,22 +42,17 @@ export async function loadInventorySnapshot(
   options: InventorySnapshotOptions = {},
 ) {
   const account = await resolveDestinyAccount(selection);
-  const http = await createAuthenticatedBungieHttpClient();
-  const [profileResponse, manifest] = await Promise.all([
-    getProfile(http, {
-      destinyMembershipId: account.membershipId,
-      membershipType: account.membershipType,
-      components: inventoryProfileComponents(options),
-    }),
+  const components = inventoryProfileComponents(options);
+  const [{ profile, profileCache }, manifest] = await Promise.all([
+    loadCachedProfile(account, components, options, DEFAULT_INVENTORY_PROFILE_CACHE_TTL_SECONDS),
     loadDisplayManifest(),
   ]);
-
-  const profile = profileResponse.Response;
   assertInventoryComponents(profile);
 
   return {
     account,
     profile,
     manifest,
+    profileCache,
   };
 }

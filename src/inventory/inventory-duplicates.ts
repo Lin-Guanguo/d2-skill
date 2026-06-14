@@ -75,6 +75,7 @@ export async function findInventoryDuplicates(options: InventoryDuplicatesOption
     ok: true,
     account: search.account,
     profileMintedAt: search.profileMintedAt,
+    profileCache: search.profileCache,
     query: search.query,
     groupBy: 'itemHash',
     totalGroupCount: groups.length,

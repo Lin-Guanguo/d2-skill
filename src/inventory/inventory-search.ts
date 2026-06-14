@@ -3,8 +3,9 @@ import { buildInventoryView } from './inventory-view.js';
 import type { ItemDetail, PublicItem } from '../items/item-model.js';
 import { itemTypeAliasValue } from '../items/item-type-aliases.js';
 import { loadInventorySnapshot } from '../profile/profile-service.js';
+import type { ProfileCacheOptions } from '../profile/profile-cache.js';
 
-export interface InventorySearchOptions extends AccountSelection {
+export interface InventorySearchOptions extends AccountSelection, ProfileCacheOptions {
   name?: string;
   perk?: string;
   owner?: string;
@@ -131,11 +132,15 @@ export async function searchInventory(options: InventorySearchOptions) {
     {
       membershipId: options.membershipId,
       membershipType: options.membershipType,
+      refreshAccount: options.refreshAccount,
+      accountCacheTtlSeconds: options.accountCacheTtlSeconds,
     },
     {
       includeItemReusablePlugs: details.includes('perks'),
       includeItemSockets: details.includes('perks'),
       includeItemStats: details.includes('stats'),
+      refreshProfile: options.refreshProfile,
+      profileCacheTtlSeconds: options.profileCacheTtlSeconds,
     },
   );
   const view = buildInventoryView(snapshot, details);
@@ -150,6 +155,7 @@ export async function searchInventory(options: InventorySearchOptions) {
     ok: true,
     account: snapshot.account,
     profileMintedAt: view.profileMintedAt,
+    profileCache: snapshot.profileCache,
     query: {
       name: options.name,
       perk: options.perk,

@@ -1,7 +1,8 @@
 import { AccountSelection } from '../account/account-service.js';
 import { searchInventory } from '../inventory/inventory-search.js';
+import type { ProfileCacheOptions } from '../profile/profile-cache.js';
 
-export interface ItemInspectOptions extends AccountSelection {
+export interface ItemInspectOptions extends AccountSelection, ProfileCacheOptions {
   itemIds: string[];
 }
 
@@ -13,6 +14,10 @@ export async function inspectItems(options: ItemInspectOptions) {
   const result = await searchInventory({
     membershipId: options.membershipId,
     membershipType: options.membershipType,
+    refreshAccount: options.refreshAccount,
+    accountCacheTtlSeconds: options.accountCacheTtlSeconds,
+    refreshProfile: options.refreshProfile,
+    profileCacheTtlSeconds: options.profileCacheTtlSeconds,
     itemIds: options.itemIds,
     details: ['perks', 'stats'],
     all: true,

@@ -1,4 +1,4 @@
-import { Command, InvalidArgumentError } from 'commander';
+import { InvalidArgumentError } from 'commander';
 import {
   activityModeAliases,
   type ActivityMode,
@@ -11,13 +11,15 @@ import {
 import { runCommand } from '../output.js';
 import {
   AccountOptions,
-  addAccountOptions,
+  D2Command,
+  ProfileCacheCliOptions,
   parseNonNegativeInteger,
   parseMax250Count,
   parsePositiveInteger,
+  profileCacheRequestOptions,
 } from './shared-options.js';
 
-interface HistoryOptions extends AccountOptions {
+interface HistoryOptions extends AccountOptions, ProfileCacheCliOptions {
   character: string;
   mode?: ActivityMode;
   count: number;
@@ -40,30 +42,32 @@ function parseActivityMode(value: string) {
 }
 
 export function createActivityCommand() {
-  const activity = new Command('activity').description('Query raw Destiny 2 activity data');
+  const activity = new D2Command('activity').description('Query raw Destiny 2 activity data');
 
-  addAccountOptions(
-    activity
-      .command('history')
-      .description('Get raw activity history for one or more characters')
-      .option('--character <character>', 'current, all, or character id', 'current')
-      .option('--mode <mode>', 'activity mode name or DestinyActivityModeType value', parseActivityMode)
-      .option('--count <count>', 'activities per page, max 250', parseMax250Count, 50)
-      .option('--page <page>', 'starting page number', parseNonNegativeInteger, 0)
-      .option('--pages <pages>', 'maximum number of pages to fetch', parsePositiveInteger, 1),
-  ).action((options: HistoryOptions) =>
-    runCommand(() =>
-      getRawActivityHistory({
-        membershipId: options.membershipId,
-        membershipType: options.membershipType,
-        character: options.character,
-        mode: options.mode,
-        count: options.count,
-        page: options.page,
-        pages: options.pages,
-      }),
-    ),
-  );
+  activity
+    .command('history')
+    .description('Get raw activity history for one or more characters')
+    .option('--character <character>', 'current, all, or character id', 'current')
+    .option('--mode <mode>', 'activity mode name or DestinyActivityModeType value', parseActivityMode)
+    .option('--count <count>', 'activities per page, max 250', parseMax250Count, 50)
+    .option('--page <page>', 'starting page number', parseNonNegativeInteger, 0)
+    .option('--pages <pages>', 'maximum number of pages to fetch', parsePositiveInteger, 1)
+    .accountOptions()
+    .profileCacheOptions()
+    .action((options: HistoryOptions) =>
+      runCommand(() =>
+        getRawActivityHistory({
+          membershipId: options.membershipId,
+          membershipType: options.membershipType,
+          ...profileCacheRequestOptions(options),
+          character: options.character,
+          mode: options.mode,
+          count: options.count,
+          page: options.page,
+          pages: options.pages,
+        }),
+      ),
+    );
 
   activity
     .command('pgcr')

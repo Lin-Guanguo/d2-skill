@@ -6,6 +6,8 @@ import {
 import { readStoredToken } from '../auth/token-store.js';
 import { createAuthenticatedBungieHttpClient } from '../bungie/http-client.js';
 import { membershipTypeLabel } from '../bungie/value-labels.js';
+import { expiresAtFrom, isFreshForTtl } from '../cache/cache-utils.js';
+import { readCacheJson, writeCacheJson } from '../cache/sqlite-cache.js';
 
 export interface DestinyAccountRef {
   membershipId: string;
@@ -21,7 +23,37 @@ export interface DestinyAccountRef {
 export interface AccountSelection {
   membershipId?: string;
   membershipType?: number;
+  refreshAccount?: boolean;
+  accountCacheTtlSeconds?: number;
 }
+
+export interface AccountCacheSummary {
+  hit: boolean;
+  refresh: boolean;
+  ttlSeconds: number;
+  cachedAt: string;
+  expiresAt: string;
+}
+
+interface DestinyAccountList {
+  bungieMembershipId: string;
+  accounts: DestinyAccountRef[];
+  defaultAccount: DestinyAccountRef;
+  profilesWithErrors: {
+    errorCode: number;
+    membershipId: string;
+    membershipType: BungieMembershipType;
+    displayName: string;
+  }[];
+}
+
+interface CachedDestinyAccountList extends DestinyAccountList {
+  cachedAt: string;
+  expiresAt: string;
+}
+
+const ACCOUNT_CACHE_NAMESPACE = 'accounts';
+const DEFAULT_ACCOUNT_CACHE_TTL_SECONDS = 900;
 
 function formatBungieName(profile: DestinyProfileUserInfoCard) {
   if (!profile.bungieGlobalDisplayName) {
@@ -60,24 +92,65 @@ function chooseDefaultAccount(accounts: DestinyAccountRef[]) {
   return sortByLastPlayed(usable.length ? usable : accounts)[0];
 }
 
-export async function listDestinyAccounts() {
+export async function listDestinyAccounts(
+  options: Pick<AccountSelection, 'refreshAccount' | 'accountCacheTtlSeconds'> = {},
+) {
   const token = await readStoredToken();
   if (!token?.membershipId) {
     throw new Error('No Bungie membership id is stored. Run `d2-skill auth login` first.');
   }
 
+  return loadDestinyAccounts(token.membershipId, options);
+}
+
+function accountCacheSummary(
+  cachedAt: string,
+  hit: boolean,
+  refresh: boolean,
+  ttlSeconds: number,
+) {
+  return {
+    hit,
+    refresh,
+    ttlSeconds,
+    cachedAt,
+    expiresAt: expiresAtFrom(cachedAt, ttlSeconds),
+  } satisfies AccountCacheSummary;
+}
+
+async function loadDestinyAccounts(
+  bungieMembershipId: string,
+  options: Pick<AccountSelection, 'refreshAccount' | 'accountCacheTtlSeconds'> = {},
+) {
+  const ttlSeconds = options.accountCacheTtlSeconds ?? DEFAULT_ACCOUNT_CACHE_TTL_SECONDS;
+  const cacheKey = `linked:${bungieMembershipId}`;
+
+  if (!options.refreshAccount) {
+    const cached = await readCacheJson<CachedDestinyAccountList>(ACCOUNT_CACHE_NAMESPACE, cacheKey);
+    if (cached && isFreshForTtl(cached.cachedAt, ttlSeconds)) {
+      return {
+        bungieMembershipId: cached.bungieMembershipId,
+        accounts: cached.accounts,
+        defaultAccount: cached.defaultAccount,
+        profilesWithErrors: cached.profilesWithErrors,
+        accountCache: accountCacheSummary(cached.cachedAt, true, false, ttlSeconds),
+      };
+    }
+  }
+
   const http = await createAuthenticatedBungieHttpClient();
   const response = await getLinkedProfiles(http, {
-    membershipId: token.membershipId,
+    membershipId: bungieMembershipId,
     membershipType: BungieMembershipType.BungieNext,
     getAllMemberships: true,
   });
 
   const accounts = response.Response.profiles.map(toDestinyAccountRef);
   const defaultAccount = chooseDefaultAccount(accounts);
-
-  return {
-    bungieMembershipId: token.membershipId,
+  const cachedAt = new Date().toISOString();
+  const expiresAt = expiresAtFrom(cachedAt, ttlSeconds);
+  const accountList: DestinyAccountList = {
+    bungieMembershipId,
     accounts,
     defaultAccount,
     profilesWithErrors: response.Response.profilesWithErrors.map((profile) => ({
@@ -87,10 +160,31 @@ export async function listDestinyAccounts() {
       displayName: profile.infoCard.displayName,
     })),
   };
+
+  await writeCacheJson(
+    ACCOUNT_CACHE_NAMESPACE,
+    cacheKey,
+    {
+      ...accountList,
+      cachedAt,
+      expiresAt,
+    } satisfies CachedDestinyAccountList,
+    { expiresAt },
+  );
+
+  return {
+    ...accountList,
+    accountCache: accountCacheSummary(cachedAt, false, options.refreshAccount ?? false, ttlSeconds),
+  };
 }
 
 export async function resolveDestinyAccount(selection: AccountSelection = {}) {
-  const accountList = await listDestinyAccounts();
+  const token = await readStoredToken();
+  if (!token?.membershipId) {
+    throw new Error('No Bungie membership id is stored. Run `d2-skill auth login` first.');
+  }
+
+  const accountList = await loadDestinyAccounts(token.membershipId, selection);
   const accounts = accountList.accounts.filter((account) => !account.isOverridden);
   const candidates = accounts.length ? accounts : accountList.accounts;
 

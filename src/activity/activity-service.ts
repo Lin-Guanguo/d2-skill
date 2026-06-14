@@ -14,10 +14,11 @@ import {
 } from '../bungie/http-client.js';
 import { expiresIn, readThroughCache } from '../cache/cache-utils.js';
 import { loadCharacterProfile } from '../characters/character-service.js';
+import type { ProfileCacheOptions } from '../profile/profile-cache.js';
 
 export type CharacterSelector = 'current' | 'all' | string;
 
-export interface ActivityHistoryOptions extends AccountSelection {
+export interface ActivityHistoryOptions extends AccountSelection, ProfileCacheOptions {
   character: CharacterSelector;
   mode?: DestinyActivityModeType;
   count: number;
@@ -84,7 +85,7 @@ function historicalCharacters(characters: DestinyHistoricalStatsPerCharacter[]) 
 async function resolveHistoryCharacters(
   account: DestinyAccountRef,
   selector: CharacterSelector,
-  selection: AccountSelection,
+  selection: AccountSelection & ProfileCacheOptions,
 ) {
   if (selector === 'current') {
     const snapshot = await loadCharacterProfile(selection);
@@ -177,6 +178,10 @@ export async function getRawActivityHistory(options: ActivityHistoryOptions) {
   const selection = {
     membershipId: options.membershipId,
     membershipType: options.membershipType,
+    refreshAccount: options.refreshAccount,
+    accountCacheTtlSeconds: options.accountCacheTtlSeconds,
+    refreshProfile: options.refreshProfile,
+    profileCacheTtlSeconds: options.profileCacheTtlSeconds,
   };
   const account = await resolveDestinyAccount(selection);
   const characters = await resolveHistoryCharacters(account, options.character, selection);

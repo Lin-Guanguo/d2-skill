@@ -4,8 +4,9 @@ import { createAuthenticatedBungieHttpClient, BungieApiError } from '../bungie/h
 import { buildInventoryView, type PublicCharacter } from '../inventory/inventory-view.js';
 import type { InventoryItemRecord, PublicItem } from '../items/item-model.js';
 import { loadInventorySnapshot } from '../profile/profile-service.js';
+import type { ProfileCacheOptions } from '../profile/profile-cache.js';
 
-export interface TransferOptions extends AccountSelection {
+export interface TransferOptions extends AccountSelection, ProfileCacheOptions {
   itemIds: string[];
   target: string;
   amount?: number;
@@ -203,6 +204,11 @@ export async function buildTransferPlan(options: TransferOptions) {
   const snapshot = await loadInventorySnapshot({
     membershipId: options.membershipId,
     membershipType: options.membershipType,
+    refreshAccount: options.refreshAccount,
+    accountCacheTtlSeconds: options.accountCacheTtlSeconds,
+  }, {
+    refreshProfile: options.refreshProfile,
+    profileCacheTtlSeconds: options.profileCacheTtlSeconds,
   });
   const view = buildInventoryView(snapshot);
   const target = resolveTarget(options.target, view.characters);
@@ -216,6 +222,7 @@ export async function buildTransferPlan(options: TransferOptions) {
     dryRun: true,
     account: snapshot.account,
     profileMintedAt: view.profileMintedAt,
+    profileCache: snapshot.profileCache,
     target,
     itemCount: options.itemIds.length,
     executableItemCount: plans.filter((plan) => plan.ok).length,
@@ -309,6 +316,7 @@ export async function executeTransferPlan(options: ExecuteTransferOptions) {
     executed: true,
     account: plan.account,
     profileMintedAt: plan.profileMintedAt,
+    profileCache: plan.profileCache,
     target: plan.target,
     itemCount: options.itemIds.length,
     results,

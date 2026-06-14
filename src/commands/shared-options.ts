@@ -41,8 +41,52 @@ export interface AccountOptions {
   membershipType?: number;
 }
 
-export function addAccountOptions(command: Command) {
-  return command
-    .option('--membership-id <id>', 'Destiny membership id to use')
-    .option('--membership-type <type>', 'Destiny membership type to use', parseInteger);
+export interface AccountCacheCliOptions {
+  refreshAccount?: boolean;
+  accountCacheTtl?: number;
+}
+
+export interface ProfileCacheCliOptions extends AccountCacheCliOptions {
+  refreshProfile?: boolean;
+  profileCacheTtl?: number;
+}
+
+export class D2Command extends Command {
+  override createCommand(name?: string) {
+    return new D2Command(name);
+  }
+
+  accountOptions() {
+    return this
+      .option('--membership-id <id>', 'Destiny membership id to use')
+      .option('--membership-type <type>', 'Destiny membership type to use', parseInteger);
+  }
+
+  accountCacheOptions() {
+    return this
+      .option('--refresh-account', 'bypass the linked Destiny account cache')
+      .option('--account-cache-ttl <seconds>', 'linked Destiny account cache TTL in seconds', parsePositiveInteger);
+  }
+
+  profileCacheOptions() {
+    return this
+      .option('--refresh-profile', 'bypass the short-lived profile snapshot cache')
+      .option('--profile-cache-ttl <seconds>', 'profile snapshot cache TTL in seconds', parsePositiveInteger);
+  }
+}
+
+export function profileCacheRequestOptions(options: ProfileCacheCliOptions) {
+  return {
+    refreshAccount: options.refreshProfile || options.refreshAccount,
+    accountCacheTtlSeconds: options.accountCacheTtl,
+    refreshProfile: options.refreshProfile,
+    profileCacheTtlSeconds: options.profileCacheTtl,
+  };
+}
+
+export function accountCacheRequestOptions(options: AccountCacheCliOptions) {
+  return {
+    refreshAccount: options.refreshAccount,
+    accountCacheTtlSeconds: options.accountCacheTtl,
+  };
 }

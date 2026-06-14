@@ -21,8 +21,13 @@ Use this skill for Destiny 2 item management. The CLI owns Bungie API calls, OAu
 
 - `wishlist list` and `wishlist inspect` read local SQLite cache only. Run `wishlist init` to fetch and refresh configured source URLs.
 - `wishlist parse --file` is local-only. `wishlist parse --url` fetches that URL once and does not update configured sources.
+- Linked account resolution is cached for 15 minutes.
+- Inventory commands (`inventory search`, `inventory duplicates`, `item inspect`, and transfer plan/execute) use a short-lived Bungie profile snapshot cache. Inventory snapshots default to 5 minutes; `character list` defaults to 15 minutes.
+- Use `--refresh-profile` when exact post-transfer or externally changed state matters. Use `--profile-cache-ttl <seconds>` to tune a session.
+- Use `account list --refresh-account` when account selection or cross-save state may have changed.
 - Manifest definitions are cached locally, but loading still checks Bungie manifest metadata before using cached tables.
 - For large cleanup or roll-review sessions, prefer one broad inventory command with `--details perks` and enough `--limit` / `--all-items`, then reason over returned JSON locally.
+- After transfer execution, query affected `itemId`s again with `--refresh-profile` before dependent moves because Bungie profile snapshots and the local cache can briefly lag.
 
 ## Core Concepts
 
@@ -66,7 +71,7 @@ node dist/cli.js inventory search --name '<item name>' --details perks,stats
 node dist/cli.js inventory search --type weapon --owner vault --details perks
 node dist/cli.js inventory search --perk '<perk name>' --type weapon --all --details perks
 node dist/cli.js inventory search --item-hash '<itemHash>' --details perks
-node dist/cli.js inventory search --item-ids '<itemId1>,<itemId2>' --details perks,stats
+node dist/cli.js inventory search --item-ids '<itemId1>,<itemId2>' --details perks,stats --refresh-profile
 ```
 
 Prefer `--limit` for exploratory work and `--all` only when the user asks for a full batch.
@@ -82,6 +87,7 @@ Important search fields:
 - `items[].bucket`: logical item bucket such as Kinetic Weapons.
 - `items[].locationBucket`: current Bungie location bucket.
 - `characters[].class`: character class with Bungie enum `value`, manifest `hash`, English `key`, and localized `name`.
+- `profileCache`: cache hit, TTL, components, cached time, and expiry for the Bungie profile snapshot.
 - `items[].perks`: combined socket plugs when `--details perks` is requested.
 - `items[].insertedPlugs`: currently inserted socket plugs.
 - `items[].availablePlugs`: runtime reusable plugs returned for the item.
@@ -181,7 +187,7 @@ Transfer targets accept `vault`, `current`, a character id, a class English key 
 After executing a transfer, verify item location before issuing a dependent move:
 
 ```bash
-node dist/cli.js inventory search --item-ids '<itemId1>,<itemId2>'
+node dist/cli.js inventory search --item-ids '<itemId1>,<itemId2>' --refresh-profile
 ```
 
 Bungie profile snapshots can briefly lag behind successful transfer responses. If the output still shows the old owner, wait a few seconds and query again before planning the next move. For `character -> character`, move to vault first, confirm the item is visible in vault, then move from vault to the target character.

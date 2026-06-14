@@ -1,12 +1,11 @@
-import { Command } from 'commander';
 import { login, refreshStoredToken } from '../auth/oauth.js';
 import { deleteStoredToken, readTokenStatus } from '../auth/token-store.js';
 import { tokenFilePath } from '../config/paths.js';
 import { runCommand } from '../output.js';
-import { parsePositiveInteger } from './shared-options.js';
+import { D2Command, parsePositiveInteger } from './shared-options.js';
 
 export function createAuthCommand() {
-  const auth = new Command('auth').description('Manage Bungie OAuth credentials');
+  const auth = new D2Command('auth').description('Manage Bungie OAuth credentials');
 
   auth
     .command('login')

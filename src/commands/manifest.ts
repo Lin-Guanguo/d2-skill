@@ -1,14 +1,14 @@
-import { Command } from 'commander';
 import { type ManifestLanguage, parseManifestLanguage } from '../config/settings.js';
 import { updateDisplayManifest } from '../manifest/manifest-service.js';
 import { runCommand } from '../output.js';
+import { D2Command } from './shared-options.js';
 
 interface UpdateOptions {
   language?: ManifestLanguage;
 }
 
 export function createManifestCommand() {
-  const manifest = new Command('manifest').description('Manage local Destiny 2 manifest cache');
+  const manifest = new D2Command('manifest').description('Manage local Destiny 2 manifest cache');
 
   manifest
     .command('update')

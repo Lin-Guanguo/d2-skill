@@ -1,4 +1,4 @@
-import { Command, InvalidArgumentError } from 'commander';
+import { InvalidArgumentError } from 'commander';
 import {
   initWishlists,
   inspectWishlistItem,
@@ -6,7 +6,12 @@ import {
   parseWishlistInput,
 } from '../wishlist/wishlist-service.js';
 import { runCommand } from '../output.js';
-import { collect, parseNonNegativeInteger, parsePositiveInteger } from './shared-options.js';
+import {
+  D2Command,
+  collect,
+  parseNonNegativeInteger,
+  parsePositiveInteger,
+} from './shared-options.js';
 import type { WishlistRole } from '../wishlist/source-model.js';
 
 const WISHLIST_ROLES: WishlistRole[] = [
@@ -45,7 +50,7 @@ interface ParseOptions {
 }
 
 export function createWishlistCommand() {
-  const wishlist = new Command('wishlist').description('Manage and inspect DIM wishlist sources');
+  const wishlist = new D2Command('wishlist').description('Manage and inspect DIM wishlist sources');
 
   wishlist
     .command('init')

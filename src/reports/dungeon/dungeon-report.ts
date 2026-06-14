@@ -11,6 +11,7 @@ import type { AccountSelection, DestinyAccountRef } from '../../account/account-
 import { readSettings } from '../../config/settings.js';
 import type { DisplayManifest } from '../../manifest/manifest-service.js';
 import { loadDisplayManifest } from '../../manifest/manifest-service.js';
+import type { ProfileCacheOptions } from '../../profile/profile-cache.js';
 import { claim, type ReportClaim } from '../core/claims.js';
 import { mapWithConcurrency } from '../core/async.js';
 import { defaultRenderPreset } from '../../render/render-document.js';
@@ -39,7 +40,7 @@ interface PgcrLoadResult {
   error?: string;
 }
 
-export interface DungeonReportOptions extends AccountSelection {
+export interface DungeonReportOptions extends AccountSelection, ProfileCacheOptions {
   character?: CharacterSelector;
   count?: number;
   page?: number;
@@ -560,6 +561,11 @@ export async function buildDungeonReport(options: DungeonReportOptions) {
     getRawActivityHistory({
       membershipId: effectiveOptions.membershipId,
       membershipType: effectiveOptions.membershipType,
+      refreshAccount:
+        effectiveOptions.refreshProfile || effectiveOptions.refreshAccount || effectiveOptions.refresh,
+      accountCacheTtlSeconds: effectiveOptions.accountCacheTtlSeconds,
+      refreshProfile: effectiveOptions.refreshProfile ?? effectiveOptions.refresh,
+      profileCacheTtlSeconds: effectiveOptions.profileCacheTtlSeconds,
       character: effectiveOptions.character,
       mode: DestinyActivityModeType.Dungeon,
       count: effectiveOptions.count,

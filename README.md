@@ -118,6 +118,7 @@ Inventory and item commands:
 node dist/cli.js inventory search --name '<localized item name>' --details perks,stats
 node dist/cli.js inventory search --perk '<localized perk name>' --type weapon --all --details perks
 node dist/cli.js inventory search --item-hash <inventoryItemHash> --details perks
+node dist/cli.js inventory search --item-ids <itemInstanceId1>,<itemInstanceId2> --refresh-profile
 node dist/cli.js inventory duplicates --type weapon --details perks --limit 20 --item-limit 5
 node dist/cli.js item inspect --item-id <itemInstanceId>
 ```
@@ -125,6 +126,8 @@ node dist/cli.js item inspect --item-id <itemInstanceId>
 Item and perk names use `D2_MANIFEST_LANGUAGE`. The default `zh-chs` supports simplified Chinese names; set `D2_MANIFEST_LANGUAGE=en` to search English names.
 
 `--details perks` returns combined `perks` plus explicit `insertedPlugs` and `availablePlugs` fields.
+
+Inventory and transfer commands use a short-lived Bungie profile snapshot cache by default. Use `--refresh-profile` when validating post-transfer state or other externally changed inventory state, and `--profile-cache-ttl <seconds>` to tune a session. Inventory snapshots default to a 5 minute TTL; `character list` defaults to 15 minutes. `account list` uses a 15 minute linked-account cache and supports `--refresh-account`.
 
 Wishlist commands:
 
