@@ -1,10 +1,11 @@
 import { transferItem } from 'bungie-api-ts/destiny2';
 import type { AccountSelection } from '../account/account-service.js';
-import { createAuthenticatedBungieHttpClient, BungieApiError } from '../bungie/http-client.js';
+import { createAuthenticatedBungieHttpClient } from '../bungie/http-client.js';
 import { buildInventoryView, type PublicCharacter } from '../inventory/inventory-view.js';
 import type { InventoryItemRecord, PublicItem } from '../items/item-model.js';
 import { loadInventorySnapshot } from '../profile/profile-service.js';
 import type { ProfileCacheOptions } from '../profile/profile-cache.js';
+import { formatExecutionError, waitBetweenGearActions } from './execution.js';
 
 export interface TransferOptions extends AccountSelection, ProfileCacheOptions {
   itemIds: string[];
@@ -230,28 +231,6 @@ export async function buildTransferPlan(options: TransferOptions) {
   };
 }
 
-function wait(ms: number) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
-}
-
-function formatExecutionError(error: unknown) {
-  if (error instanceof BungieApiError) {
-    return {
-      message: error.message,
-      errorCode: error.errorCode,
-      errorStatus: error.errorStatus,
-      throttleSeconds: error.throttleSeconds,
-      httpStatus: error.httpStatus,
-    };
-  }
-
-  return {
-    message: error instanceof Error ? error.message : String(error),
-  };
-}
-
 export async function executeTransferPlan(options: ExecuteTransferOptions) {
   const plan = await buildTransferPlan(options);
   const invalidPlans = plan.plans.filter((itemPlan) => !itemPlan.ok);
@@ -290,7 +269,7 @@ export async function executeTransferPlan(options: ExecuteTransferOptions) {
           characterId: action.characterId,
           membershipType: plan.account.membershipType,
         });
-        await wait(120);
+        await waitBetweenGearActions();
       }
 
       results.push({
