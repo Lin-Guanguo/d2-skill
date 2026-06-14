@@ -15,6 +15,14 @@
 - Send progress, browser instructions, warnings, and recovery hints to stderr.
 - Preserve output fields once skills depend on them; add fields instead of renaming when practical.
 
+## Atomic Tool Philosophy
+
+- Prefer small CLI commands that do one job well over monolithic workflows.
+- Design commands as composable tools: search, inspect, parse, score, group, plan, and execute should remain separable unless combining them is the actual user-facing behavior.
+- Let the CLI provide deterministic facts, evidence, scores, and safe execution primitives; let the AI compose commands, compare tradeoffs, and make context-sensitive recommendations.
+- Avoid hiding irreversible or subjective decisions inside CLI automation. For cleanup workflows, the CLI should identify and move candidates when asked; the user handles in-game dismantling.
+- Keep intermediate outputs useful for follow-up commands and agent reasoning. Prefer stable identifiers, source metadata, reasons, and evidence over prose-only summaries.
+
 ## Bungie API and Manifest Boundaries
 
 - Use `bungie-api-ts` enums for Bungie protocol values, API parameters, bitmasks, and comparisons.

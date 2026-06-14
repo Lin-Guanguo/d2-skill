@@ -50,6 +50,7 @@ Current structure:
 - `src/inventory/`: owned item collection views and search.
 - `src/items/`: item detail models and inspection.
 - `src/gear/`: transfer planning and execution.
+- `src/wishlist/`: DIM wishlist source parsing, fetching, and local cache.
 - `src/platform/`: OS-specific helpers.
 - `src/output.ts`: shared CLI output and error handling.
 - `skills/`: agent-facing skill descriptions.
@@ -116,12 +117,26 @@ Inventory and item commands:
 ```bash
 node dist/cli.js inventory search --name '<localized item name>' --details perks,stats
 node dist/cli.js inventory search --perk '<localized perk name>' --type weapon --all --details perks
+node dist/cli.js inventory search --item-hash <inventoryItemHash> --details perks
+node dist/cli.js inventory duplicates --type weapon --details perks --limit 20 --item-limit 5
 node dist/cli.js item inspect --item-id <itemInstanceId>
 ```
 
 Item and perk names use `D2_MANIFEST_LANGUAGE`. The default `zh-chs` supports simplified Chinese names; set `D2_MANIFEST_LANGUAGE=en` to search English names.
 
 `--details perks` returns combined `perks` plus explicit `insertedPlugs` and `availablePlugs` fields.
+
+Wishlist commands:
+
+```bash
+node dist/cli.js wishlist init
+node dist/cli.js wishlist list
+node dist/cli.js wishlist inspect --item-hash <inventoryItemHash> --limit 20
+node dist/cli.js wishlist parse --file <path> --role reference --limit 20
+node dist/cli.js wishlist parse --url <rawWishlistUrl> --source-id ad-hoc --role reference --limit 20
+```
+
+Configured wishlist sources live in `src/wishlist/sources.json`. Initialized wishlist files and parsed entry caches are stored outside the repository under `~/.d2-skill/wishlists/` and `~/.d2-skill/cache.sqlite`.
 
 Gear commands:
 

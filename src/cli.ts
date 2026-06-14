@@ -10,6 +10,7 @@ import { createInventoryCommand } from './commands/inventory.js';
 import { createItemCommand } from './commands/item.js';
 import { createManifestCommand } from './commands/manifest.js';
 import { createReportCommand } from './commands/report.js';
+import { createWishlistCommand } from './commands/wishlist.js';
 import { printError, withAuditPath } from './output.js';
 
 const program = new Command();
@@ -61,6 +62,7 @@ program.addCommand(configureCommandTree(createItemCommand()));
 program.addCommand(configureCommandTree(createActivityCommand()));
 program.addCommand(configureCommandTree(createGearCommand()));
 program.addCommand(configureCommandTree(createReportCommand()));
+program.addCommand(configureCommandTree(createWishlistCommand()));
 
 try {
   await program.parseAsync();

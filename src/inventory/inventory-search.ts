@@ -10,6 +10,7 @@ export interface InventorySearchOptions extends AccountSelection {
   owner?: string;
   bucket?: string;
   type?: string;
+  itemHash?: number;
   itemId?: string;
   itemIds?: string[];
   transferable?: boolean;
@@ -98,8 +99,13 @@ function itemIdMatches(item: PublicItem, itemId: string | undefined, itemIds: st
   return true;
 }
 
+function itemHashMatches(item: PublicItem, itemHash: number | undefined) {
+  return itemHash === undefined || item.itemHash === itemHash;
+}
+
 function itemMatches(item: PublicItem, options: InventorySearchOptions, currentCharacterId?: string) {
   return (
+    itemHashMatches(item, options.itemHash) &&
     itemIdMatches(item, options.itemId, options.itemIds) &&
     includesText(item.name, options.name) &&
     typeMatches(item, options.type) &&
@@ -150,6 +156,7 @@ export async function searchInventory(options: InventorySearchOptions) {
       owner: options.owner,
       bucket: options.bucket,
       type: options.type,
+      itemHash: options.itemHash,
       itemId: options.itemId,
       itemIds: options.itemIds,
       transferable: options.transferable,

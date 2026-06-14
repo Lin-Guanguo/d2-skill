@@ -1,8 +1,9 @@
 import { Command } from 'commander';
 import { ItemDetail } from '../items/item-model.js';
+import { findInventoryDuplicates } from '../inventory/inventory-duplicates.js';
 import { searchInventory } from '../inventory/inventory-search.js';
 import { runCommand } from '../output.js';
-import { AccountOptions, addAccountOptions, parseNonNegativeInteger } from './shared-options.js';
+import { AccountOptions, addAccountOptions, parseNonNegativeInteger, parsePositiveInteger } from './shared-options.js';
 
 function parseDetails(value?: string): ItemDetail[] {
   if (!value) {
@@ -24,6 +25,7 @@ interface SearchOptions extends AccountOptions {
   owner?: string;
   bucket?: string;
   type?: string;
+  itemHash?: number;
   itemId?: string;
   itemIds?: string;
   transferable?: boolean;
@@ -31,6 +33,8 @@ interface SearchOptions extends AccountOptions {
   details?: string;
   limit?: number;
   all?: boolean;
+  itemLimit?: number;
+  allItems?: boolean;
 }
 
 export function createInventoryCommand() {
@@ -45,6 +49,7 @@ export function createInventoryCommand() {
       .option('--owner <owner>', 'vault, profile, current, class key/name, or character id')
       .option('--bucket <bucket>', 'bucket hash or bucket name substring')
       .option('--type <type>', 'item type name substring, numeric value, or English alias')
+      .option('--item-hash <hash>', 'exact Destiny inventory item hash', parsePositiveInteger)
       .option('--item-id <id>', 'exact item instance id')
       .option('--item-ids <ids>', 'comma-separated item instance ids')
       .option('--transferable', 'only include items Bungie marks transferable')
@@ -57,6 +62,30 @@ export function createInventoryCommand() {
       searchInventory({
         ...options,
         itemIds: options.itemIds?.split(',').map((itemId: string) => itemId.trim()).filter(Boolean),
+        details: parseDetails(options.details),
+      }),
+    ),
+  );
+
+  addAccountOptions(
+    inventory
+      .command('duplicates')
+      .description('Group duplicate owned items by exact Destiny inventory item hash')
+      .option('--name <text>', 'case-insensitive item name substring')
+      .option('--perk <text>', 'case-insensitive inserted perk/plug name substring')
+      .option('--owner <owner>', 'vault, profile, current, class key/name, or character id')
+      .option('--bucket <bucket>', 'bucket hash or bucket name substring')
+      .option('--type <type>', 'item type name substring, numeric value, or English alias')
+      .option('--item-hash <hash>', 'exact Destiny inventory item hash', parsePositiveInteger)
+      .option('--details <details>', 'comma-separated details to include: perks,stats')
+      .option('--limit <count>', 'maximum duplicate groups to return', parseNonNegativeInteger, 50)
+      .option('--all', 'return all duplicate groups')
+      .option('--item-limit <count>', 'maximum items to return per duplicate group', parseNonNegativeInteger, 20)
+      .option('--all-items', 'return all items in each duplicate group'),
+  ).action((options: SearchOptions) =>
+    runCommand(() =>
+      findInventoryDuplicates({
+        ...options,
         details: parseDetails(options.details),
       }),
     ),
