@@ -1,4 +1,0 @@
-interface:
-  display_name: "D2 Item"
-  short_description: "Inspect Destiny 2 item details."
-  default_prompt: "Use $d2-item to inspect known Destiny 2 item ids, perks, stats, and roll details."
