@@ -10,6 +10,14 @@ const ITEM_TYPE_ALIASES: Record<string, DestinyItemType> = {
   weapon: DestinyItemType.Weapon,
 };
 
+const ITEM_TYPE_KEYS = new Map(
+  Object.entries(ITEM_TYPE_ALIASES).map(([key, value]) => [value, key]),
+);
+
 export function itemTypeAliasValue(value: string) {
   return ITEM_TYPE_ALIASES[value];
+}
+
+export function itemTypeKey(value: DestinyItemType | undefined) {
+  return value === undefined ? 'unknown' : (ITEM_TYPE_KEYS.get(value) ?? `item-type-${value}`);
 }

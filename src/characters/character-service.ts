@@ -21,7 +21,7 @@ import {
   characterGenderRef,
   characterRaceRef,
 } from '../manifest/display-labels.js';
-import { type ItemManifest, loadItemManifest } from '../manifest/manifest-service.js';
+import { type DisplayManifest, loadDisplayManifest } from '../manifest/manifest-service.js';
 
 export interface CharacterListOptions extends AccountSelection {}
 
@@ -66,7 +66,7 @@ function latestCharacter(characters: CharacterSummary[]) {
   )[0];
 }
 
-function summarizeCharacter(character: DestinyCharacterComponent, manifest: ItemManifest): CharacterSummary {
+function summarizeCharacter(character: DestinyCharacterComponent, manifest: DisplayManifest): CharacterSummary {
   return {
     characterId: character.characterId,
     class: characterClassRef(manifest, character),
@@ -92,7 +92,7 @@ export async function loadCharacterProfile(
       membershipType: account.membershipType,
       components: characterProfileComponents(),
     }),
-    loadItemManifest(),
+    loadDisplayManifest(),
   ]);
 
   const profile = profileResponse.Response;

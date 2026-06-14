@@ -76,14 +76,14 @@ function typeMatches(item: PublicItem, type: string | undefined) {
   const normalizedType = normalizeText(type);
   const aliasedItemType = itemTypeAliasValue(normalizedType);
   if (aliasedItemType !== undefined) {
-    return item.type.value === aliasedItemType;
+    return item.category.value === aliasedItemType;
   }
 
   if (/^\d+$/.test(type)) {
-    return item.type.value === Number(type);
+    return item.category.value === Number(type);
   }
 
-  return includesText(item.type.name, type);
+  return includesText(item.typeName, type);
 }
 
 function itemIdMatches(item: PublicItem, itemId: string | undefined, itemIds: string[] | undefined) {

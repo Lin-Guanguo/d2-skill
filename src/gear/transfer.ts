@@ -63,7 +63,7 @@ function resolveTarget(target: string, characters: PublicCharacter[]): TransferT
     characters.find((candidate) => normalizeText(candidate.class.name) === normalized);
 
   if (!character) {
-    throw new Error(`Unknown transfer target "${target}". Use "vault", "current", a class name, or a character id.`);
+    throw new Error(`Unknown transfer target "${target}". Use "vault", "current", a class key/name, or a character id.`);
   }
 
   return {

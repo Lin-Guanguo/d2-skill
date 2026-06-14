@@ -7,19 +7,19 @@ import {
 } from 'bungie-api-ts/destiny2';
 import { readCacheJson, writeCacheJson } from '../cache/sqlite-cache.js';
 import { createBungieHttpClient } from '../bungie/http-client.js';
-import { ITEM_MANIFEST_TABLES, itemManifestTables } from '../bungie/manifest-tables.js';
+import { DISPLAY_MANIFEST_TABLES, displayManifestTables } from '../bungie/manifest-tables.js';
 import { readEnvConfig } from '../config/env.js';
 
 const MANIFEST_CACHE_NAMESPACE = 'manifest';
 
-export type ItemManifest = DestinyManifestSlice<typeof ITEM_MANIFEST_TABLES>;
+export type DisplayManifest = DestinyManifestSlice<typeof DISPLAY_MANIFEST_TABLES>;
 
-interface LoadItemManifestOptions {
+interface LoadDisplayManifestOptions {
   language?: DestinyManifestLanguage;
   refresh?: boolean;
 }
 
-const manifestPromises = new Map<string, Promise<ItemManifest>>();
+const manifestPromises = new Map<string, Promise<DisplayManifest>>();
 
 function resolveManifestLanguage(language: DestinyManifestLanguage | undefined) {
   return language ?? readEnvConfig().manifestLanguage;
@@ -30,20 +30,20 @@ function tablePathVersion(manifest: DestinyManifest, language: DestinyManifestLa
     manifest.jsonWorldComponentContentPaths[language] ??
     manifest.jsonWorldComponentContentPaths.en;
 
-  return ITEM_MANIFEST_TABLES.map((table) => `${table}:${componentPaths?.[table] ?? 'missing'}`).join('|');
+  return DISPLAY_MANIFEST_TABLES.map((table) => `${table}:${componentPaths?.[table] ?? 'missing'}`).join('|');
 }
 
 function itemManifestCacheKey(manifest: DestinyManifest, language: DestinyManifestLanguage) {
   return `items:${language}:${tablePathVersion(manifest, language)}`;
 }
 
-async function downloadItemManifest(language: DestinyManifestLanguage, refresh: boolean) {
+async function downloadDisplayManifest(language: DestinyManifestLanguage, refresh: boolean) {
   const http = createBungieHttpClient();
   const manifest = await getDestinyManifest(http);
   const cacheKey = itemManifestCacheKey(manifest.Response, language);
 
   if (!refresh) {
-    const cached = await readCacheJson<ItemManifest>(MANIFEST_CACHE_NAMESPACE, cacheKey);
+    const cached = await readCacheJson<DisplayManifest>(MANIFEST_CACHE_NAMESPACE, cacheKey);
     if (cached) {
       return cached;
     }
@@ -51,7 +51,7 @@ async function downloadItemManifest(language: DestinyManifestLanguage, refresh: 
 
   const slice = await getDestinyManifestSlice(http, {
     destinyManifest: manifest.Response,
-    tableNames: itemManifestTables(),
+    tableNames: displayManifestTables(),
     language,
   });
 
@@ -59,7 +59,7 @@ async function downloadItemManifest(language: DestinyManifestLanguage, refresh: 
   return slice;
 }
 
-export async function loadItemManifest(options: LoadItemManifestOptions = {}) {
+export async function loadDisplayManifest(options: LoadDisplayManifestOptions = {}) {
   const language = resolveManifestLanguage(options.language);
   const refresh = options.refresh ?? false;
   const promiseKey = `${language}:${refresh}`;
@@ -71,7 +71,7 @@ export async function loadItemManifest(options: LoadItemManifestOptions = {}) {
     }
   }
 
-  const promise = downloadItemManifest(language, refresh).catch((error) => {
+  const promise = downloadDisplayManifest(language, refresh).catch((error) => {
     manifestPromises.delete(promiseKey);
     throw error;
   });
@@ -81,15 +81,15 @@ export async function loadItemManifest(options: LoadItemManifestOptions = {}) {
   return promise;
 }
 
-export async function updateItemManifest(language?: DestinyManifestLanguage) {
+export async function updateDisplayManifest(language?: DestinyManifestLanguage) {
   const resolvedLanguage = resolveManifestLanguage(language);
-  const manifest = await loadItemManifest({ language: resolvedLanguage, refresh: true });
+  const manifest = await loadDisplayManifest({ language: resolvedLanguage, refresh: true });
   return {
     ok: true,
     language: resolvedLanguage,
-    tables: ITEM_MANIFEST_TABLES,
+    tables: DISPLAY_MANIFEST_TABLES,
     counts: Object.fromEntries(
-      ITEM_MANIFEST_TABLES.map((table) => [table, Object.keys(manifest[table]).length]),
+      DISPLAY_MANIFEST_TABLES.map((table) => [table, Object.keys(manifest[table]).length]),
     ),
   };
 }

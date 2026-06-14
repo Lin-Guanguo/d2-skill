@@ -9,14 +9,14 @@ import {
   type InventoryProfileComponentOptions,
   inventoryProfileComponents,
 } from '../bungie/profile-components.js';
-import { type ItemManifest, loadItemManifest } from '../manifest/manifest-service.js';
+import { type DisplayManifest, loadDisplayManifest } from '../manifest/manifest-service.js';
 
 export type InventorySnapshotOptions = InventoryProfileComponentOptions;
 
 export interface InventorySnapshot {
   account: DestinyAccountRef;
   profile: DestinyProfileResponse;
-  manifest: ItemManifest;
+  manifest: DisplayManifest;
 }
 
 function assertInventoryComponents(profile: DestinyProfileResponse) {
@@ -43,7 +43,7 @@ export async function loadInventorySnapshot(
       membershipType: account.membershipType,
       components: inventoryProfileComponents(options),
     }),
-    loadItemManifest(),
+    loadDisplayManifest(),
   ]);
 
   const profile = profileResponse.Response;

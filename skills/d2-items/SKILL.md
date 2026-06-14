@@ -13,8 +13,8 @@ Use this skill for Destiny 2 item management. The CLI owns Bungie API calls, OAu
 - Use `node dist/cli.js ...`. Run `pnpm build` when `dist/cli.js` is missing or stale.
 - Call `d2-login` first when auth is missing, expired, or rejected.
 - Parse stdout JSON only; stderr is human guidance.
-- Item, type, tier, bucket, character class, perk, and stat names use `D2_MANIFEST_LANGUAGE` from `.env`; default is `zh-chs`.
-- JSON display objects keep localized `name` separate from stable `value`, `hash`, or `key` fields.
+- Item, `typeName`, tier, bucket, character class, perk, and stat names use `D2_MANIFEST_LANGUAGE` from `.env`; default is `zh-chs`.
+- JSON keeps localized display fields separate from stable `value`, `hash`, or English `key` fields.
 
 ## Search
 
@@ -33,8 +33,9 @@ Prefer `--limit` for exploratory work and `--all` only when the user asks for a 
 Important search fields:
 
 - `items[].itemId`: item instance id. `null` means the item is not supported for transfer.
-- `items[].owner`: `vault`, `profile`, or a character id/class label.
-- `items[].type`: item type with Bungie enum `value` and localized `name`.
+- `items[].owner`: current holder object; use `owner.type` (`vault`, `profile`, or `character`), `owner.id` for character id, and `owner.label` for display.
+- `items[].category`: broad Bungie item category with enum `value` and English `key`, useful for logic.
+- `items[].typeName`: localized item type display name, useful for presentation.
 - `items[].tier`: item tier with Bungie enum `value`, manifest `hash`, and localized `name`.
 - `items[].location`: current item location with Bungie enum `value` and English `key`.
 - `items[].bucket`: logical item bucket such as Kinetic Weapons.
@@ -61,8 +62,9 @@ Important inspect fields:
 - `items[].insertedPlugs`: currently inserted socket plugs.
 - `items[].availablePlugs`: runtime reusable plugs returned for the item.
 - `items[].stats`: item stats.
-- `items[].owner`: current holder or vault.
-- `items[].type`: item type with Bungie enum `value` and localized `name`.
+- `items[].owner`: current holder object; use `owner.type`, `owner.id`, and `owner.label`.
+- `items[].category`: broad Bungie item category with enum `value` and English `key`, useful for logic.
+- `items[].typeName`: localized item type display name, useful for presentation.
 - `items[].tier`: item tier with Bungie enum `value`, manifest `hash`, and localized `name`.
 - `items[].location`: current item location with Bungie enum `value` and English `key`.
 - `items[].bucket`: logical item bucket.

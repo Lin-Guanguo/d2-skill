@@ -3,7 +3,8 @@ import type {
   DestinyInventoryItemDefinition,
 } from 'bungie-api-ts/destiny2';
 import { destinyClassKey } from '../bungie/value-labels.js';
-import type { ItemManifest } from './manifest-service.js';
+import { itemTypeKey } from '../items/item-type-aliases.js';
+import type { DisplayManifest } from './manifest-service.js';
 
 interface DisplayDefinition {
   displayProperties: {
@@ -15,7 +16,7 @@ function displayName(definition: DisplayDefinition | undefined, fallback: string
   return definition?.displayProperties.name || fallback;
 }
 
-export function characterClassRef(manifest: ItemManifest, character: DestinyCharacterComponent) {
+export function characterClassRef(manifest: DisplayManifest, character: DestinyCharacterComponent) {
   return {
     value: character.classType,
     hash: character.classHash,
@@ -27,7 +28,7 @@ export function characterClassRef(manifest: ItemManifest, character: DestinyChar
   };
 }
 
-export function characterRaceRef(manifest: ItemManifest, character: DestinyCharacterComponent) {
+export function characterRaceRef(manifest: DisplayManifest, character: DestinyCharacterComponent) {
   return {
     value: character.raceType,
     hash: character.raceHash,
@@ -38,7 +39,7 @@ export function characterRaceRef(manifest: ItemManifest, character: DestinyChara
   };
 }
 
-export function characterGenderRef(manifest: ItemManifest, character: DestinyCharacterComponent) {
+export function characterGenderRef(manifest: DisplayManifest, character: DestinyCharacterComponent) {
   return {
     value: character.genderType,
     hash: character.genderHash,
@@ -49,22 +50,30 @@ export function characterGenderRef(manifest: ItemManifest, character: DestinyCha
   };
 }
 
-export function itemTypeRef(definition: DestinyInventoryItemDefinition | undefined) {
+export function itemCategoryRef(definition: DestinyInventoryItemDefinition | undefined) {
   if (!definition) {
     return {
       value: null,
-      name: 'Unknown',
+      key: 'unknown',
     };
   }
 
   return {
     value: definition.itemType,
-    name: definition.itemTypeDisplayName || `ItemType(${definition.itemType})`,
+    key: itemTypeKey(definition.itemType),
   };
 }
 
+export function itemTypeName(definition: DestinyInventoryItemDefinition | undefined) {
+  if (!definition) {
+    return 'Unknown';
+  }
+
+  return definition.itemTypeDisplayName || `ItemType(${definition.itemType})`;
+}
+
 export function itemTierRef(
-  manifest: ItemManifest,
+  manifest: DisplayManifest,
   definition: DestinyInventoryItemDefinition | undefined,
 ) {
   const inventory = definition?.inventory;

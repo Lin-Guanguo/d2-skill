@@ -1,6 +1,6 @@
 import type { DestinyManifestComponentName } from 'bungie-api-ts/destiny2';
 
-export const ITEM_MANIFEST_TABLES = [
+export const DISPLAY_MANIFEST_TABLES = [
   'DestinyClassDefinition',
   'DestinyGenderDefinition',
   'DestinyInventoryItemDefinition',
@@ -11,6 +11,6 @@ export const ITEM_MANIFEST_TABLES = [
   'DestinyDamageTypeDefinition',
 ] as const satisfies readonly DestinyManifestComponentName[];
 
-export function itemManifestTables() {
-  return [...ITEM_MANIFEST_TABLES] satisfies DestinyManifestComponentName[];
+export function displayManifestTables() {
+  return [...DISPLAY_MANIFEST_TABLES] satisfies DestinyManifestComponentName[];
 }

@@ -1,6 +1,6 @@
 import { Command } from 'commander';
 import { type ManifestLanguage, parseManifestLanguage } from '../config/env.js';
-import { updateItemManifest } from '../manifest/manifest-service.js';
+import { updateDisplayManifest } from '../manifest/manifest-service.js';
 import { runCommand } from '../output.js';
 
 interface UpdateOptions {
@@ -12,9 +12,9 @@ export function createManifestCommand() {
 
   manifest
     .command('update')
-    .description('Download and cache item-related manifest tables')
+    .description('Download and cache display-related manifest tables')
     .option('--language <language>', 'manifest language, such as zh-chs, zh-cht, or en', parseManifestLanguage)
-    .action((options: UpdateOptions) => runCommand(() => updateItemManifest(options.language)));
+    .action((options: UpdateOptions) => runCommand(() => updateDisplayManifest(options.language)));
 
   return manifest;
 }

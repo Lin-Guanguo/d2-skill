@@ -42,7 +42,7 @@ export function createInventoryCommand() {
       .description('Search inventory, equipped items, and vault items from one profile snapshot')
       .option('--name <text>', 'case-insensitive item name substring')
       .option('--perk <text>', 'case-insensitive inserted perk/plug name substring')
-      .option('--owner <owner>', 'vault, profile, current, localized class name, or character id')
+      .option('--owner <owner>', 'vault, profile, current, class key/name, or character id')
       .option('--bucket <bucket>', 'bucket hash or bucket name substring')
       .option('--type <type>', 'item type name substring, numeric value, or English alias')
       .option('--item-id <id>', 'exact item instance id')

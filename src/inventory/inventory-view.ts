@@ -14,8 +14,9 @@ import {
 import { itemLocationRef } from '../bungie/value-labels.js';
 import {
   characterClassRef,
+  itemCategoryRef,
   itemTierRef,
-  itemTypeRef,
+  itemTypeName,
 } from '../manifest/display-labels.js';
 import type { InventorySnapshot } from '../profile/profile-service.js';
 import {
@@ -271,7 +272,8 @@ function normalizeItem(
     itemId,
     itemHash: raw.itemHash,
     name: displayName(definition),
-    type: itemTypeRef(definition),
+    category: itemCategoryRef(definition),
+    typeName: itemTypeName(definition),
     tier: itemTierRef(snapshot.manifest, definition),
     quantity: raw.quantity,
     owner,

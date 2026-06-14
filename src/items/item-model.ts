@@ -22,12 +22,18 @@ export interface PublicKeyedValue {
   key: string;
 }
 
+export interface PublicNullableKeyedValue {
+  value: number | null;
+  key: string;
+}
+
 export interface PublicItem {
   key: string;
   itemId: string | null;
   itemHash: number;
   name: string;
-  type: PublicNamedValue;
+  category: PublicNullableKeyedValue;
+  typeName: string;
   tier: PublicManifestValue;
   quantity: number;
   owner: PublicItemOwner;
