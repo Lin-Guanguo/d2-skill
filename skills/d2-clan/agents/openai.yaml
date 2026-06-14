@@ -1,0 +1,4 @@
+interface:
+  display_name: "D2 Clan"
+  short_description: "Query Destiny 2 clan rewards and rankings."
+  default_prompt: "Use $d2-clan to query Destiny 2 clan memberships, weekly rewards, aggregate stats, and leaderboards."

@@ -1,4 +1,4 @@
 interface:
   display_name: "D2 Items"
   short_description: "Manage Destiny 2 inventory items."
-  default_prompt: "Use $d2-items to search, inspect, analyze, or transfer Destiny 2 items."
+  default_prompt: "Use $d2-items to search, inspect, analyze, transfer, equip, lock, or modify reusable plugs on Destiny 2 items."

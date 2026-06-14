@@ -1,6 +1,6 @@
 ---
 name: d2-items
-description: Manage Destiny 2 inventory items through the repo-local CLI. Use when a task needs owned item search, vault or character inventory lookup, duplicate grouping, wishlist evidence, item instance inspection, perk/stat or roll analysis, cleanup candidate selection, transfer planning, or item movement between character and vault.
+description: Manage Destiny 2 inventory items through the repo-local CLI. Use when a task needs owned item search, vault or character inventory lookup, duplicate grouping, wishlist evidence, item instance inspection, perk/stat or roll analysis, cleanup candidate selection, transfer planning, item movement, equip, lock/unlock, postmaster pull, socket inspection, or free reusable plug insertion.
 ---
 
 # D2 Items
@@ -80,6 +80,7 @@ node dist/cli.js inventory wishlist --owner vault --type weapon --all --min-entr
 ```
 
 Prefer `--limit` for exploratory work and `--all` only when the user asks for a full batch.
+Use `d2-search` instead when the user wants one broad term searched across owned items, official manifest items, vendors, records, collectibles, and craftables.
 
 Important search fields:
 
@@ -210,3 +211,61 @@ Current limits:
 - Does not automate `character -> character`; move to vault first, then from vault to the target character.
 - Does not move equipped items, postmaster items, or non-instanced stack items yet.
 - Does not auto-make space when a destination is full.
+
+## Gear Actions
+
+For equip, lock/unlock, and postmaster pull, prefer `plan` or `execute --dry-run` unless the user explicitly asks to perform the action.
+
+```bash
+test -f dist/cli.js || pnpm build
+node dist/cli.js gear equip plan --item-id '<itemId>' --character owner
+node dist/cli.js gear equip execute --item-id '<itemId>' --character owner --dry-run
+node dist/cli.js gear lock plan --item-id '<itemId>'
+node dist/cli.js gear unlock plan --item-id '<itemId>'
+node dist/cli.js gear postmaster pull plan --item-id '<itemId>' --character current --amount 1
+```
+
+Execute only after the user asks for execution:
+
+```bash
+node dist/cli.js gear equip execute --item-id '<itemId>' --character owner
+node dist/cli.js gear lock execute --item-id '<itemId>'
+node dist/cli.js gear unlock execute --item-id '<itemId>'
+node dist/cli.js gear postmaster pull execute --item-id '<itemId>' --character current --amount 1
+```
+
+Repeat `--item-id` for batch actions. Use `--continue-on-error` only when partial execution is acceptable.
+
+Important gear action fields:
+
+- `plans[]`: requested action list, resolved target character, and per-item errors or no-op plans.
+- `executed`: false for plans and dry runs; true for real execution responses.
+- `results[]`: per-item Bungie execution results when not using `--dry-run`.
+- `results[].noop`: true when the requested state was already satisfied.
+- `profileCache`: profile snapshot used to resolve item ownership.
+
+## Sockets
+
+Use sockets for owned item plug inspection and free reusable plug insertion. This does not cover advanced AWA mod insertion.
+
+```bash
+test -f dist/cli.js || pnpm build
+node dist/cli.js socket inspect --item-id '<itemId>'
+node dist/cli.js socket inspect --item-id '<itemId>' --socket-index 3 --insertable
+node dist/cli.js socket insert-free plan --item-id '<itemId>' --socket-index 3 --plug-hash '<plugHash>' --character owner
+node dist/cli.js socket insert-free execute --item-id '<itemId>' --socket-index 3 --plug-hash '<plugHash>' --character owner --dry-run
+```
+
+Execute free insertion only after the user asks for execution:
+
+```bash
+node dist/cli.js socket insert-free execute --item-id '<itemId>' --socket-index 3 --plug-hash '<plugHash>' --character owner
+```
+
+Important socket fields:
+
+- `sockets[]`: socket index, inserted plug, reusable plugs, and insertion flags.
+- `sockets[].plugs[]`: runtime reusable plugs Bungie reports for this owned item and socket.
+- `sockets[].plugs[].canInsert`: true when Bungie currently allows the plug.
+- `socket-insert-free-plan.plan`: validates item ownership, socket index, requested `plugHash`, and no-op state before execution.
+- `socket-insert-free-execute.result`: per-item Bungie execution result when not using `--dry-run`.

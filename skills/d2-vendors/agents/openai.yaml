@@ -1,0 +1,4 @@
+interface:
+  display_name: "D2 Vendors"
+  short_description: "Query Destiny 2 live vendor sales."
+  default_prompt: "Use $d2-vendors to inspect Destiny 2 vendors, sales, costs, and purchasable or affordable routes."

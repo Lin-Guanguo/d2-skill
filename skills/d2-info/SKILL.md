@@ -1,13 +1,13 @@
 ---
 name: d2-info
-description: Resolve official Destiny 2 information through the repo-local CLI. Use when a task needs Bungie manifest/entity lookup, public milestones, public vendors, item source families, current live vendor sales, vendor/focusing routes, Monument of Triumph event engrams, preview-pool evidence, or answers like where an item can be obtained now.
+description: Resolve official Destiny 2 information and item acquisition routes through the repo-local CLI. Use when a task needs Bungie manifest/entity lookup, public milestones, public vendors, item source families, vendor/focusing route evidence, Monument of Triumph event engrams, preview-pool evidence, or answers like where an item can be obtained now.
 ---
 
 # D2 Info
 
 ## Overview
 
-Use this skill for official Destiny 2 information lookup, not owned-item management. The CLI owns Bungie API calls, OAuth, manifest loading, vendor lookup, and JSON output.
+Use this skill for official Destiny 2 information lookup and acquisition-route reasoning, not owned-item management or vendor shopping. The CLI owns Bungie API calls, OAuth, manifest loading, vendor lookup, and JSON output.
 
 Call `d2-login` first when auth is missing, expired, or rejected.
 
@@ -28,11 +28,11 @@ node dist/cli.js info public-vendors
 - `entity-search`: search official manifest data by definition type and term. It attempts Bungie's entity search first and falls back to the local manifest cache when the official search endpoint cannot satisfy the query.
 - `entity`: fetch one official entity definition by type and hash. It prefers the localized local manifest cache for supported tables and uses Bungie's entity endpoint as fallback.
 - `public-milestones`: list current public milestone hashes, localized display data, dates, activity counts, quest counts, and related vendors from Bungie's public milestone endpoint.
-- `public-vendors`: list character-agnostic public vendor sales. This is smaller than character-scoped `GetVendors`; use item source lookup for account/character-specific vendor routes.
+- `public-vendors`: list character-agnostic public vendor sales. This is smaller than character-scoped `GetVendors`; use item source lookup for acquisition routes or `d2-vendors` for current character-specific sale/cost/affordability checks.
 
 ## Item Source
 
-Use `info item-source` when the user asks where an item comes from, whether it is currently rollable, which vendor sells it, or whether a Monument/event engram can drop it.
+Use `info item-source` when the user asks where an item comes from, whether it is currently rollable, which route exposes it, or whether a Monument/event engram can drop it.
 
 ```bash
 test -f dist/cli.js || pnpm build
@@ -99,4 +99,4 @@ Write a temporary Node script only when the current CLI output is missing an API
 
 When a temporary script reveals a repeatable workflow, promote it into a CLI command before updating this skill. Keep Bungie API calls, OAuth handling, persistence, and business logic in the CLI, not in skill instructions.
 
-Do not use `d2-items` for this unless the user asks about owned copies, rolls, transfer, duplicate cleanup, or wishlist evidence. Do not use `d2-stats` unless the user asks about characters, activities, PGCRs, or player statistics.
+Use `d2-vendors` when the question is specifically about current character vendor sales, costs, purchasable state, or affordability. Use `d2-search` when the user wants one broad search across owned items, manifest items, vendors, and progress. Do not use `d2-items` for this unless the user asks about owned copies, rolls, transfer, duplicate cleanup, or wishlist evidence. Do not use `d2-stats` unless the user asks about characters, activities, PGCRs, or player statistics.

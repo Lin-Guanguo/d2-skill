@@ -1,6 +1,6 @@
 ---
 name: d2-stats
-description: Query raw Destiny 2 character, activity, PGCR, and statistics data through the repo-local CLI. Use when a task needs activity history, post game carnage reports, character ids, dungeon or raid source data, or future stats/public query commands.
+description: Query raw Destiny 2 character, activity, PGCR, and personal historical statistics through the repo-local CLI. Use when a task needs activity history, post game carnage reports, character ids, dungeon or raid source data, historical stat definitions, per-character historical stats, unique weapon history, or aggregate activity stats.
 ---
 
 # d2-stats
@@ -36,6 +36,35 @@ Fetch one post game carnage report:
 node dist/cli.js activity pgcr --activity-id '<activityInstanceId>'
 ```
 
+Search historical stat definitions:
+
+```bash
+node dist/cli.js stats definitions --name '<text>' --limit 20
+node dist/cli.js stats definitions --stat-id '<statId>'
+node dist/cli.js stats definitions --group weapons --all
+```
+
+Fetch personal historical stats:
+
+```bash
+node dist/cli.js stats character --character current --group general --period all-time
+node dist/cli.js stats character --character all --group weapons --mode raid --period all-time
+node dist/cli.js stats character --character current --group general --period daily --daystart 2026-06-01 --dayend 2026-06-14
+```
+
+Fetch unique weapon usage history:
+
+```bash
+node dist/cli.js stats weapons --character current
+node dist/cli.js stats weapons --character all
+```
+
+Fetch aggregate activity stats:
+
+```bash
+node dist/cli.js stats aggregate-activities --character current
+```
+
 Build an analyzed dungeon summary:
 
 ```bash
@@ -48,6 +77,10 @@ node dist/cli.js report dungeon --image
 
 - `activity history` is faster and returns Bungie history pages.
 - `activity pgcr` returns one detailed activity report.
+- `stats definitions` is public and does not require a selected character.
+- `stats character` accepts `--character current`, `all`, `account`, `0`, or a character id. Use repeated `--group` and `--mode` for multiple filters.
+- `stats weapons` returns Bungie's unique weapon history for selected characters.
+- `stats aggregate-activities` can return `ok: false`, `degraded: true`, and structured per-character errors when Bungie rejects the endpoint.
 - `character list` and `activity history --character current` use a cached character profile by default; use `--refresh-profile` when current-character resolution must be exact.
 - `report dungeon` uses cached history and PGCR inputs and returns analyzed JSON. Use `--refresh` when fresh report inputs matter.
 - Commands include `audit.path` in stdout JSON; use it to reopen the saved command output if the terminal output is gone.
@@ -56,3 +89,4 @@ node dist/cli.js report dungeon --image
 - If the same report was run recently and no fresh data is expected, prefer reading the saved `audit.path` or `artifact.path` file instead of rerunning the command.
 - Report claims use `status`, `confidence`, and `evidence`; do not treat rejected or candidate claims as confirmed achievements.
 - Do not infer solo, flawless, fresh, checkpoint, fastest, or best-clear claims from a single field. Those belong in report-layer analysis.
+- Use `d2-clan` for clan rewards, clan aggregate stats, and clan leaderboards.
