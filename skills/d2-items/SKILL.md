@@ -41,6 +41,7 @@ Use this skill for Destiny 2 item management. The CLI owns Bungie API calls, OAu
 - `availablePlugs` are reusable plugs Bungie reports for that owned item.
 - DIM wishlist entries usually match `itemHash + perkHashes`; they do not identify a specific owned copy.
 - Cleanup workflow: use `itemHash` to find duplicate copies, compare each copy by `itemId`, then move cleanup candidates by `itemId`.
+- Armor 3.0 uses new stat meanings while Bungie/API-facing stat hashes can still appear as legacy Armor 2.0 names in CLI output. Interpret armor stats with this compatibility mapping: Mobility -> Weapons, Resilience -> Health, Recovery -> Class, Discipline -> Grenade, Intellect -> Super, Strength -> Melee. Treat old localized names such as `韧性` as raw display labels, not current build-analysis terms.
 
 ## Composition Patterns
 
