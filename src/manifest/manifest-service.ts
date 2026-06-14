@@ -33,14 +33,14 @@ function tablePathVersion(manifest: DestinyManifest, language: DestinyManifestLa
   return DISPLAY_MANIFEST_TABLES.map((table) => `${table}:${componentPaths?.[table] ?? 'missing'}`).join('|');
 }
 
-function itemManifestCacheKey(manifest: DestinyManifest, language: DestinyManifestLanguage) {
-  return `items:${language}:${tablePathVersion(manifest, language)}`;
+function displayManifestCacheKey(manifest: DestinyManifest, language: DestinyManifestLanguage) {
+  return `display:${language}:${tablePathVersion(manifest, language)}`;
 }
 
 async function downloadDisplayManifest(language: DestinyManifestLanguage, refresh: boolean) {
   const http = createBungieHttpClient();
   const manifest = await getDestinyManifest(http);
-  const cacheKey = itemManifestCacheKey(manifest.Response, language);
+  const cacheKey = displayManifestCacheKey(manifest.Response, language);
 
   if (!refresh) {
     const cached = await readCacheJson<DisplayManifest>(MANIFEST_CACHE_NAMESPACE, cacheKey);

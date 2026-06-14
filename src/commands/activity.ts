@@ -13,6 +13,7 @@ import {
   AccountOptions,
   addAccountOptions,
   parseNonNegativeInteger,
+  parseMax250Count,
   parsePositiveInteger,
 } from './shared-options.js';
 
@@ -38,14 +39,6 @@ function parseActivityMode(value: string) {
   return mode;
 }
 
-function parseHistoryCount(value: string) {
-  const parsed = parsePositiveInteger(value);
-  if (parsed > 250) {
-    throw new InvalidArgumentError('Activity history count cannot exceed 250.');
-  }
-  return parsed;
-}
-
 export function createActivityCommand() {
   const activity = new Command('activity').description('Query raw Destiny 2 activity data');
 
@@ -55,7 +48,7 @@ export function createActivityCommand() {
       .description('Get raw activity history for one or more characters')
       .option('--character <character>', 'current, all, or character id', 'current')
       .option('--mode <mode>', 'activity mode name or DestinyActivityModeType value', parseActivityMode)
-      .option('--count <count>', 'activities per page, max 250', parseHistoryCount, 50)
+      .option('--count <count>', 'activities per page, max 250', parseMax250Count, 50)
       .option('--page <page>', 'starting page number', parseNonNegativeInteger, 0)
       .option('--pages <pages>', 'maximum number of pages to fetch', parsePositiveInteger, 1),
   ).action((options: HistoryOptions) =>

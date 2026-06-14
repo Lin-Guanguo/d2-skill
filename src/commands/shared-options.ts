@@ -23,6 +23,14 @@ export function parsePositiveInteger(value: string) {
   return parsed;
 }
 
+export function parseMax250Count(value: string) {
+  const parsed = parsePositiveInteger(value);
+  if (parsed > 250) {
+    throw new InvalidArgumentError('Count cannot exceed 250.');
+  }
+  return parsed;
+}
+
 export function collect(value: string, previous: string[]) {
   previous.push(value);
   return previous;

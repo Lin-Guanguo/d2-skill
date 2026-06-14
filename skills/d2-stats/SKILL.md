@@ -34,8 +34,17 @@ Fetch one post game carnage report:
 node dist/cli.js activity pgcr --activity-id '<activityInstanceId>'
 ```
 
+Build an analyzed dungeon summary:
+
+```bash
+node dist/cli.js report dungeon
+node dist/cli.js report dungeon --count 250 --pages 1 --recent 20
+```
+
 ## Notes
 
 - `activity history` is faster and returns Bungie history pages.
 - `activity pgcr` returns one detailed activity report.
+- `report dungeon` uses cached history and PGCR inputs and returns analyzed JSON.
+- Report claims use `status`, `confidence`, and `evidence`; do not treat rejected or candidate claims as confirmed achievements.
 - Do not infer solo, flawless, fresh, checkpoint, fastest, or best-clear claims from a single field. Those belong in report-layer analysis.

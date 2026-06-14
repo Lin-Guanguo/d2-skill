@@ -1,6 +1,8 @@
 import type { DestinyManifestComponentName } from 'bungie-api-ts/destiny2';
 
 export const DISPLAY_MANIFEST_TABLES = [
+  'DestinyActivityDefinition',
+  'DestinyActivityModeDefinition',
   'DestinyClassDefinition',
   'DestinyGenderDefinition',
   'DestinyInventoryItemDefinition',

@@ -1,4 +1,4 @@
 name: d2-stats
 version: 0.1.0
-short_description: "Query raw Destiny 2 stats and activity data."
-default_prompt: "Use d2-stats to query Destiny 2 characters, activity history, PGCRs, and raw statistics data through the repo-local CLI."
+short_description: "Query raw and analyzed Destiny 2 stats and activity data."
+default_prompt: "Use d2-stats to query Destiny 2 characters, activity history, PGCRs, and analyzed activity reports through the repo-local CLI."

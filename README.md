@@ -46,6 +46,7 @@ Current structure:
 - `src/auth/`: Bungie OAuth login, callback handling, refresh, status, and token storage.
 - `src/manifest/`: manifest loading, caching, and definition tables.
 - `src/profile/`: Bungie profile snapshot loading.
+- `src/reports/`: analyzed report builders on top of raw CLI data.
 - `src/inventory/`: owned item collection views and search.
 - `src/items/`: item detail models and inspection.
 - `src/gear/`: transfer planning and execution.
@@ -87,6 +88,14 @@ node dist/cli.js character list
 node dist/cli.js activity history --character current --mode dungeon --count 50
 node dist/cli.js activity history --character all --mode raid --count 250 --pages 2
 node dist/cli.js activity pgcr --activity-id <activityInstanceId>
+```
+
+Report commands:
+
+```bash
+node dist/cli.js report dungeon
+node dist/cli.js report dungeon --count 250 --pages 1 --recent 20
+node dist/cli.js report dungeon --refresh
 ```
 
 Manifest commands:

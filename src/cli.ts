@@ -8,6 +8,7 @@ import { createGearCommand } from './commands/gear.js';
 import { createInventoryCommand } from './commands/inventory.js';
 import { createItemCommand } from './commands/item.js';
 import { createManifestCommand } from './commands/manifest.js';
+import { createReportCommand } from './commands/report.js';
 import { printError } from './output.js';
 
 const program = new Command();
@@ -46,6 +47,7 @@ program.addCommand(configureCommandTree(createInventoryCommand()));
 program.addCommand(configureCommandTree(createItemCommand()));
 program.addCommand(configureCommandTree(createActivityCommand()));
 program.addCommand(configureCommandTree(createGearCommand()));
+program.addCommand(configureCommandTree(createReportCommand()));
 
 try {
   await program.parseAsync();
