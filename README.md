@@ -38,8 +38,10 @@ Current structure:
 - `src/cli.ts`: root CLI entrypoint.
 - `src/commands/`: command definitions.
 - `src/account/`: Destiny account resolution.
+- `src/activity/`: raw activity history and PGCR queries.
 - `src/bungie/`: Bungie API HTTP client.
 - `src/cache/`: local SQLite cache.
+- `src/characters/`: character listing and character selection helpers.
 - `src/config/`: local environment loading.
 - `src/auth/`: Bungie OAuth login, callback handling, refresh, status, and token storage.
 - `src/manifest/`: manifest loading, caching, and definition tables.
@@ -76,6 +78,15 @@ Account commands:
 
 ```bash
 node dist/cli.js account list
+```
+
+Character and activity commands:
+
+```bash
+node dist/cli.js character list
+node dist/cli.js activity history --character current --mode dungeon --count 50
+node dist/cli.js activity history --character all --mode raid --count 250 --pages 2
+node dist/cli.js activity pgcr --activity-id <activityInstanceId>
 ```
 
 Manifest commands:

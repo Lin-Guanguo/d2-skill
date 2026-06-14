@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 import { Command, CommanderError } from 'commander';
 import { createAccountCommand } from './commands/account.js';
+import { createActivityCommand } from './commands/activity.js';
 import { createAuthCommand } from './commands/auth.js';
+import { createCharacterCommand } from './commands/character.js';
 import { createGearCommand } from './commands/gear.js';
 import { createInventoryCommand } from './commands/inventory.js';
 import { createItemCommand } from './commands/item.js';
@@ -37,10 +39,12 @@ function configureCommandTree(command: Command) {
 
 configureCommand(program);
 program.addCommand(configureCommandTree(createAccountCommand()));
+program.addCommand(configureCommandTree(createCharacterCommand()));
 program.addCommand(configureCommandTree(createAuthCommand()));
 program.addCommand(configureCommandTree(createManifestCommand()));
 program.addCommand(configureCommandTree(createInventoryCommand()));
 program.addCommand(configureCommandTree(createItemCommand()));
+program.addCommand(configureCommandTree(createActivityCommand()));
 program.addCommand(configureCommandTree(createGearCommand()));
 
 try {

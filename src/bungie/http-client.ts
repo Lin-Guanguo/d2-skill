@@ -5,6 +5,24 @@ import { readStoredToken } from '../auth/token-store.js';
 import { readEnvConfig } from '../config/env.js';
 
 const TOKEN_REFRESH_SKEW_MS = 2 * 60 * 1000;
+const MAX_THROTTLE_RETRIES = 3;
+const MAX_THROTTLE_WAIT_MS = 5 * 60 * 1000;
+
+const THROTTLE_ERROR_CODES = new Set<number>([
+  PlatformErrorCodes.ThrottleLimitExceeded,
+  PlatformErrorCodes.ThrottleLimitExceededMinutes,
+  PlatformErrorCodes.ThrottleLimitExceededMomentarily,
+  PlatformErrorCodes.ThrottleLimitExceededSeconds,
+  PlatformErrorCodes.PerEndpointRequestThrottleExceeded,
+  PlatformErrorCodes.PerApplicationThrottleExceeded,
+  PlatformErrorCodes.PerApplicationAnonymousThrottleExceeded,
+  PlatformErrorCodes.PerApplicationAuthenticatedThrottleExceeded,
+  PlatformErrorCodes.PerUserThrottleExceeded,
+  PlatformErrorCodes.DestinyThrottledByGameServer,
+  PlatformErrorCodes.DestinyDirectBabelClientTimeout,
+]);
+
+let timesThrottled = 0;
 
 export class BungieApiError extends Error {
   readonly errorCode?: number;
@@ -86,23 +104,57 @@ async function parseResponse(response: Response, endpoint: string) {
   return data;
 }
 
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isThrottleError(error: unknown): error is BungieApiError {
+  return (
+    error instanceof BungieApiError &&
+    error.errorCode !== undefined &&
+    THROTTLE_ERROR_CODES.has(error.errorCode)
+  );
+}
+
+function throttleDelayMs(error: BungieApiError, attempt: number) {
+  if (error.throttleSeconds !== undefined && error.throttleSeconds > 0) {
+    return Math.min(MAX_THROTTLE_WAIT_MS, error.throttleSeconds * 1000);
+  }
+
+  return Math.min(MAX_THROTTLE_WAIT_MS, Math.pow(2, timesThrottled + attempt) * 500);
+}
+
 export function createBungieHttpClient(accessToken?: string): HttpClient {
   const config = readEnvConfig();
 
   return async <T>(request: HttpClientConfig): Promise<T> => {
     const endpoint = buildUrl(request);
-    const response = await fetch(endpoint, {
-      method: request.method,
-      headers: {
-        Accept: 'application/json',
-        'X-API-Key': config.apiKey,
-        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined),
-        ...(request.body ? { 'Content-Type': 'application/json' } : undefined),
-      },
-      body: request.body ? JSON.stringify(request.body) : undefined,
-    });
 
-    return (await parseResponse(response, endpoint)) as T;
+    for (let attempt = 0; ; attempt++) {
+      try {
+        const response = await fetch(endpoint, {
+          method: request.method,
+          headers: {
+            Accept: 'application/json',
+            'X-API-Key': config.apiKey,
+            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined),
+            ...(request.body ? { 'Content-Type': 'application/json' } : undefined),
+          },
+          body: request.body ? JSON.stringify(request.body) : undefined,
+        });
+
+        const result = await parseResponse(response, endpoint);
+        timesThrottled = Math.floor(timesThrottled / 2);
+        return result as T;
+      } catch (error) {
+        if (!isThrottleError(error) || attempt >= MAX_THROTTLE_RETRIES) {
+          throw error;
+        }
+
+        timesThrottled += 1;
+        await delay(throttleDelayMs(error, attempt));
+      }
+    }
   };
 }
 
