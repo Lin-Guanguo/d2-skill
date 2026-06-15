@@ -173,6 +173,7 @@ Gear commands:
 ```bash
 node dist/cli.js gear transfer plan --item-id <itemInstanceId> --target vault
 node dist/cli.js gear transfer execute --item-id <itemInstanceId> --target current
+node dist/cli.js gear transfer execute --item-id <itemInstanceId> --target current --wait
 ```
 
-After a successful transfer, Bungie profile snapshots may briefly show stale item locations. Query the item again before issuing a dependent transfer, especially when doing `character -> vault -> character`.
+After a successful transfer, Bungie profile snapshots may briefly show stale item locations. Use `--verify` or `--wait` before issuing a dependent transfer, especially when doing `character -> vault -> character`.

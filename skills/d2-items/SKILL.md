@@ -29,7 +29,7 @@ Use this skill for Destiny 2 item management. The CLI owns Bungie API calls, OAu
 - Manifest definitions are cached locally, but loading still checks Bungie manifest metadata before using cached tables.
 - For large cleanup or roll-review sessions, prefer one broad inventory command with `--details perks` and enough `--limit` / `--all-items`, then reason over returned JSON locally.
 - For broad wishlist roll review, prefer `inventory wishlist` because it joins owned items with cached wishlist evidence in one profile snapshot while keeping the output composable.
-- After transfer execution, query affected `itemId`s again with `--refresh-profile` before dependent moves because Bungie profile snapshots and the local cache can briefly lag.
+- After transfer execution, use `gear transfer execute --verify` or `--wait` before dependent moves because Bungie profile snapshots and the local cache can briefly lag.
 
 ## Core Concepts
 
@@ -191,18 +191,22 @@ Execute a transfer:
 ```bash
 node dist/cli.js gear transfer execute --item-id '<itemId>' --target vault
 node dist/cli.js gear transfer execute --item-id '<itemId>' --target current
+node dist/cli.js gear transfer execute --item-id '<itemId>' --target current --verify
+node dist/cli.js gear transfer execute --item-id '<itemId>' --target current --wait
 ```
 
 Repeat `--item-id` for batch transfers. The CLI executes serially.
 Transfer targets accept `vault`, `current`, a character id, a class English key such as `hunter`, or the localized class name from the current manifest language.
 
-After executing a transfer, verify item location before issuing a dependent move:
+Use `--verify` to refresh profile once after execution and include final owner evidence in `verification`. Use `--wait` to retry until refreshed profile data shows the target owner or `--verify-timeout` expires. Tune with `--verify-timeout <seconds>` and `--verify-interval <seconds>`.
+
+If verification is not requested, or if you need an independent check, query affected items manually before issuing a dependent move:
 
 ```bash
 node dist/cli.js inventory search --item-ids '<itemId1>,<itemId2>' --refresh-profile
 ```
 
-Bungie profile snapshots can briefly lag behind successful transfer responses. If the output still shows the old owner, wait a few seconds and query again before planning the next move. For `character -> character`, move to vault first, confirm the item is visible in vault, then move from vault to the target character.
+Bungie profile snapshots can briefly lag behind successful transfer responses. If verification still shows the old owner, wait a few seconds and query again before planning the next move. For `character -> character`, move to vault first, confirm the item is visible in vault, then move from vault to the target character.
 
 Current limits:
 
@@ -241,6 +245,7 @@ Important gear action fields:
 - `executed`: false for plans and dry runs; true for real execution responses.
 - `results[]`: per-item Bungie execution results when not using `--dry-run`.
 - `results[].noop`: true when the requested state was already satisfied.
+- `verification`: present only when `--verify` or `--wait` was requested; contains refreshed owner checks for each affected item.
 - `profileCache`: profile snapshot used to resolve item ownership.
 
 ## Sockets

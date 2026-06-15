@@ -24,6 +24,10 @@ interface TransferOptions extends AccountOptions, ProfileCacheCliOptions {
   yes?: boolean;
   dryRun?: boolean;
   continueOnError?: boolean;
+  verify?: boolean;
+  wait?: boolean;
+  verifyTimeout?: number;
+  verifyInterval?: number;
 }
 
 interface GearActionCliOptions extends AccountOptions, ProfileCacheCliOptions {
@@ -90,6 +94,10 @@ export function createGearCommand() {
     .option('--dry-run', 'build and return the transfer plan without executing')
     .option('--yes', 'accepted for compatibility; execute is the default')
     .option('--continue-on-error', 'continue executing later item transfers after a failure')
+    .option('--verify', 'refresh profile after execution and include final item locations')
+    .option('--wait', 'wait until refreshed profile data shows the target location; implies --verify')
+    .option('--verify-timeout <seconds>', 'maximum seconds to wait for transfer verification', parsePositiveInteger, 20)
+    .option('--verify-interval <seconds>', 'seconds between transfer verification attempts', parsePositiveInteger, 2)
     .accountOptions()
     .profileCacheOptions()
     .action((options: TransferOptions) =>
@@ -117,6 +125,10 @@ export function createGearCommand() {
           target: options.target,
           amount: options.amount,
           continueOnError: options.continueOnError,
+          verify: options.verify,
+          wait: options.wait,
+          verifyTimeoutSeconds: options.verifyTimeout,
+          verifyIntervalSeconds: options.verifyInterval,
         });
       }),
     );
