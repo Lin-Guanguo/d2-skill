@@ -36,6 +36,10 @@ export function collect(value: string, previous: string[]) {
   return previous;
 }
 
+export function parseCommaSeparatedList(value: string | undefined) {
+  return value?.split(',').map((part) => part.trim()).filter(Boolean);
+}
+
 export interface AccountOptions {
   membershipId?: string;
   membershipType?: number;
@@ -73,6 +77,13 @@ export class D2Command extends Command {
       .option('--refresh-profile', 'bypass the short-lived profile snapshot cache')
       .option('--profile-cache-ttl <seconds>', 'profile snapshot cache TTL in seconds', parsePositiveInteger);
   }
+}
+
+export function addRepeatedItemIdOption(
+  command: D2Command,
+  description = 'item instance id; repeat for multiple items',
+) {
+  return command.option('--item-id <id>', description, collect, []);
 }
 
 export function profileCacheRequestOptions(options: ProfileCacheCliOptions) {

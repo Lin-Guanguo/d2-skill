@@ -12,7 +12,7 @@ import {
   AccountOptions,
   D2Command,
   ProfileCacheCliOptions,
-  collect,
+  addRepeatedItemIdOption,
   parsePositiveInteger,
   profileCacheRequestOptions,
 } from './shared-options.js';
@@ -46,10 +46,6 @@ function baseGearActionOptions(options: GearActionCliOptions) {
   };
 }
 
-function addItemIdOption(command: D2Command) {
-  return command.option('--item-id <id>', 'item instance id; repeat for multiple items', collect, []);
-}
-
 function addCharacterOption(command: D2Command) {
   return command.option('--character <character>', 'owner, current, class key/name, or character id');
 }
@@ -60,10 +56,12 @@ export function createGearCommand() {
     .command('transfer')
     .description('Plan or execute item transfers');
 
-  transfer
-    .command('plan')
-    .description('Build a dry-run transfer plan for one or more item instance ids')
-    .option('--item-id <id>', 'item instance id to transfer; repeat for multiple items', collect, [])
+  addRepeatedItemIdOption(
+    transfer
+      .command('plan')
+      .description('Build a dry-run transfer plan for one or more item instance ids'),
+    'item instance id to transfer; repeat for multiple items',
+  )
     .requiredOption('--target <target>', 'vault, current, class key/name, or character id')
     .option('--amount <count>', 'stack amount to transfer', parsePositiveInteger, 1)
     .accountOptions()
@@ -81,10 +79,12 @@ export function createGearCommand() {
       ),
     );
 
-  transfer
-    .command('execute')
-    .description('Execute item transfers for one or more item instance ids')
-    .option('--item-id <id>', 'item instance id to transfer; repeat for multiple items', collect, [])
+  addRepeatedItemIdOption(
+    transfer
+      .command('execute')
+      .description('Execute item transfers for one or more item instance ids'),
+    'item instance id to transfer; repeat for multiple items',
+  )
     .requiredOption('--target <target>', 'vault, current, class key/name, or character id')
     .option('--amount <count>', 'stack amount to transfer', parsePositiveInteger, 1)
     .option('--dry-run', 'build and return the transfer plan without executing')
@@ -126,7 +126,7 @@ export function createGearCommand() {
     .description('Plan or execute item equip actions');
 
   addCharacterOption(
-    addItemIdOption(
+    addRepeatedItemIdOption(
       equip
         .command('plan')
         .description('Build a dry-run equip plan for one or more item instance ids'),
@@ -139,7 +139,7 @@ export function createGearCommand() {
     );
 
   addCharacterOption(
-    addItemIdOption(
+    addRepeatedItemIdOption(
       equip
         .command('execute')
         .description('Execute item equip actions'),
@@ -172,7 +172,7 @@ export function createGearCommand() {
     .description('Plan or execute item lock actions');
 
   addCharacterOption(
-    addItemIdOption(
+    addRepeatedItemIdOption(
       lock
         .command('plan')
         .description('Build a dry-run lock plan for one or more item instance ids'),
@@ -185,7 +185,7 @@ export function createGearCommand() {
     );
 
   addCharacterOption(
-    addItemIdOption(
+    addRepeatedItemIdOption(
       lock
         .command('execute')
         .description('Execute item lock actions'),
@@ -218,7 +218,7 @@ export function createGearCommand() {
     .description('Plan or execute item unlock actions');
 
   addCharacterOption(
-    addItemIdOption(
+    addRepeatedItemIdOption(
       unlock
         .command('plan')
         .description('Build a dry-run unlock plan for one or more item instance ids'),
@@ -231,7 +231,7 @@ export function createGearCommand() {
     );
 
   addCharacterOption(
-    addItemIdOption(
+    addRepeatedItemIdOption(
       unlock
         .command('execute')
         .description('Execute item unlock actions'),
@@ -267,7 +267,7 @@ export function createGearCommand() {
     .description('Plan or execute postmaster item pulls');
 
   addCharacterOption(
-    addItemIdOption(
+    addRepeatedItemIdOption(
       pull
         .command('plan')
         .description('Build a dry-run postmaster pull plan for one or more item instance ids'),
@@ -281,7 +281,7 @@ export function createGearCommand() {
     );
 
   addCharacterOption(
-    addItemIdOption(
+    addRepeatedItemIdOption(
       pull
         .command('execute')
         .description('Execute postmaster item pulls'),

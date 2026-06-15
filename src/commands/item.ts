@@ -4,7 +4,7 @@ import {
   AccountOptions,
   D2Command,
   ProfileCacheCliOptions,
-  collect,
+  addRepeatedItemIdOption,
   profileCacheRequestOptions,
 } from './shared-options.js';
 
@@ -15,10 +15,12 @@ interface InspectOptions extends AccountOptions, ProfileCacheCliOptions {
 export function createItemCommand() {
   const item = new D2Command('item').description('Inspect and analyze Destiny 2 item details');
 
-  item
-    .command('inspect')
-    .description('Inspect one or more item instance ids with perks and stats')
-    .option('--item-id <id>', 'item instance id to inspect; repeat for multiple items', collect, [])
+  addRepeatedItemIdOption(
+    item
+      .command('inspect')
+      .description('Inspect one or more item instance ids with perks and stats'),
+    'item instance id to inspect; repeat for multiple items',
+  )
     .accountOptions()
     .profileCacheOptions()
     .action((options: InspectOptions) =>

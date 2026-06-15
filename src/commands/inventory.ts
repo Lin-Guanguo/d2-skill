@@ -8,6 +8,7 @@ import {
   D2Command,
   ProfileCacheCliOptions,
   collect,
+  parseCommaSeparatedList,
   parseNonNegativeInteger,
   parsePositiveInteger,
   profileCacheRequestOptions,
@@ -74,7 +75,7 @@ export function createInventoryCommand() {
         searchInventory({
           ...options,
           ...profileCacheRequestOptions(options),
-          itemIds: options.itemIds?.split(',').map((itemId: string) => itemId.trim()).filter(Boolean),
+          itemIds: parseCommaSeparatedList(options.itemIds),
           details: parseDetails(options.details),
         }),
       ),
@@ -132,7 +133,7 @@ export function createInventoryCommand() {
         matchInventoryWishlists({
           ...options,
           ...profileCacheRequestOptions(options),
-          itemIds: options.itemIds?.split(',').map((itemId: string) => itemId.trim()).filter(Boolean),
+          itemIds: parseCommaSeparatedList(options.itemIds),
           details: parseDetails(options.details),
           sourceIds: options.source,
           minEntryPerks: options.minEntryPerks,

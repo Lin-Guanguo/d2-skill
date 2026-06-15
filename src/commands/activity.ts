@@ -1,8 +1,5 @@
-import { InvalidArgumentError } from 'commander';
 import {
-  activityModeAliases,
   type ActivityMode,
-  parseActivityModeValue,
 } from '../activity/activity-modes.js';
 import {
   getRawActivityHistory,
@@ -18,6 +15,7 @@ import {
   parsePositiveInteger,
   profileCacheRequestOptions,
 } from './shared-options.js';
+import { parseActivityMode } from './activity-mode-options.js';
 
 interface HistoryOptions extends AccountOptions, ProfileCacheCliOptions {
   character: string;
@@ -29,16 +27,6 @@ interface HistoryOptions extends AccountOptions, ProfileCacheCliOptions {
 
 interface PgcrOptions {
   activityId: string;
-}
-
-function parseActivityMode(value: string) {
-  const mode = parseActivityModeValue(value);
-  if (mode === undefined) {
-    throw new InvalidArgumentError(
-      `Unknown activity mode "${value}". Use a numeric DestinyActivityModeType or one of: ${activityModeAliases().join(', ')}.`,
-    );
-  }
-  return mode;
 }
 
 export function createActivityCommand() {
