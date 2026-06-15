@@ -4,6 +4,7 @@ import type { ItemDetail, PublicItem } from '../items/item-model.js';
 import { itemTypeAliasValue } from '../items/item-type-aliases.js';
 import { loadInventorySnapshot } from '../profile/profile-service.js';
 import type { ProfileCacheOptions } from '../profile/profile-cache.js';
+import { resultEnvelope } from '../result.js';
 
 export interface InventorySearchOptions extends AccountSelection, ProfileCacheOptions {
   name?: string;
@@ -153,23 +154,30 @@ export async function searchInventory(options: InventorySearchOptions) {
 
   return {
     ok: true,
+    ...resultEnvelope('inventory-search', {
+      query: {
+        name: options.name,
+        perk: options.perk,
+        owner: options.owner,
+        bucket: options.bucket,
+        type: options.type,
+        itemHash: options.itemHash,
+        itemId: options.itemId,
+        itemIds: options.itemIds,
+        transferable: options.transferable,
+        equipped: options.equipped,
+        details,
+        limit,
+      },
+      source: {
+        endpoint: 'Destiny2.GetProfile',
+        components: snapshot.profileCache.components,
+        manifest: 'display',
+      },
+    }),
     account: snapshot.account,
     profileMintedAt: view.profileMintedAt,
     profileCache: snapshot.profileCache,
-    query: {
-      name: options.name,
-      perk: options.perk,
-      owner: options.owner,
-      bucket: options.bucket,
-      type: options.type,
-      itemHash: options.itemHash,
-      itemId: options.itemId,
-      itemIds: options.itemIds,
-      transferable: options.transferable,
-      equipped: options.equipped,
-      details,
-      limit,
-    },
     characters: view.characters,
     count: items.length,
     totalMatched: matched.length,

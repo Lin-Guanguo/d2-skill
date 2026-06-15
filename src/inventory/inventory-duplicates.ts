@@ -1,5 +1,6 @@
 import type { AccountSelection } from '../account/account-service.js';
 import type { ItemDetail, PublicItem } from '../items/item-model.js';
+import { resultEnvelope } from '../result.js';
 import { searchInventory } from './inventory-search.js';
 
 export interface InventoryDuplicatesOptions extends AccountSelection {
@@ -73,10 +74,16 @@ export async function findInventoryDuplicates(options: InventoryDuplicatesOption
 
   return {
     ok: true,
+    ...resultEnvelope('inventory-duplicates', {
+      query: search.query,
+      source: {
+        composedFrom: ['inventory.search'],
+        searchSource: search.source,
+      },
+    }),
     account: search.account,
     profileMintedAt: search.profileMintedAt,
     profileCache: search.profileCache,
-    query: search.query,
     groupBy: 'itemHash',
     totalGroupCount: groups.length,
     groupCount: returnedGroups.length,

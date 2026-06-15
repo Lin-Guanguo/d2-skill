@@ -1,5 +1,6 @@
 import { listDestinyAccounts } from '../account/account-service.js';
 import { runCommand } from '../output.js';
+import { resultEnvelope } from '../result.js';
 import {
   AccountCacheCliOptions,
   D2Command,
@@ -18,6 +19,15 @@ export function createAccountCommand() {
         const accounts = await listDestinyAccounts(accountCacheRequestOptions(options));
         return {
           ok: true,
+          ...resultEnvelope('account-list', {
+            query: {
+              refreshAccount: options.refreshAccount ?? false,
+              accountCacheTtlSeconds: options.accountCacheTtl,
+            },
+            source: {
+              endpoint: 'Destiny2.GetLinkedProfiles',
+            },
+          }),
           ...accounts,
         };
       }),

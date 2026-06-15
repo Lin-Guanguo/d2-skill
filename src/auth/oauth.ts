@@ -125,7 +125,7 @@ export async function login(options: LoginOptions) {
   await writeStoredToken(token);
 
   return {
-    ...sanitizeStoredToken(token),
+    ...sanitizeStoredToken(token, 'auth-login'),
     authorizationUrlOpened: options.openBrowser,
   };
 }
@@ -146,5 +146,5 @@ export async function refreshStoredToken() {
     previous,
   );
   await writeStoredToken(token);
-  return sanitizeStoredToken(token);
+  return sanitizeStoredToken(token, 'auth-refresh');
 }

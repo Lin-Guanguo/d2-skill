@@ -9,6 +9,7 @@ import { readCacheJson, writeCacheJson } from '../cache/sqlite-cache.js';
 import { createBungieHttpClient } from '../bungie/http-client.js';
 import { DISPLAY_MANIFEST_TABLES, displayManifestTables } from '../bungie/manifest-tables.js';
 import { readSettings } from '../config/settings.js';
+import { resultEnvelope } from '../result.js';
 
 const MANIFEST_CACHE_NAMESPACE = 'manifest';
 
@@ -86,6 +87,18 @@ export async function updateDisplayManifest(language?: DestinyManifestLanguage) 
   const manifest = await loadDisplayManifest({ language: resolvedLanguage, refresh: true });
   return {
     ok: true,
+    ...resultEnvelope('manifest-update', {
+      query: {
+        language: resolvedLanguage,
+      },
+      source: {
+        endpoints: [
+          'Destiny2.GetDestinyManifest',
+          'Destiny2.GetDestinyManifestSlice',
+        ],
+        manifestTables: DISPLAY_MANIFEST_TABLES,
+      },
+    }),
     language: resolvedLanguage,
     tables: DISPLAY_MANIFEST_TABLES,
     counts: Object.fromEntries(

@@ -1,4 +1,5 @@
 import type { ItemDetail } from '../items/item-model.js';
+import { resultEnvelope } from '../result.js';
 import {
   createWishlistMatcher,
   type WishlistMatcherOptions,
@@ -48,19 +49,26 @@ export async function matchInventoryWishlists(options: InventoryWishlistOptions)
       };
     }),
   );
+  const query = {
+    ...search.query,
+    details: requestedDetails,
+    wishlist: {
+      sourceIds: matcher.sources.map((source) => source.id),
+      minEntryPerks: matcher.minEntryPerks,
+      matchLimit: matcher.matchLimit,
+      internalDetails: ['perks'],
+    },
+  };
 
   return {
     ...search,
-    query: {
-      ...search.query,
-      details: requestedDetails,
-      wishlist: {
-        sourceIds: matcher.sources.map((source) => source.id),
-        minEntryPerks: matcher.minEntryPerks,
-        matchLimit: matcher.matchLimit,
-        internalDetails: ['perks'],
+    ...resultEnvelope('inventory-wishlist', {
+      query,
+      source: {
+        composedFrom: ['inventory.search', 'wishlist.match'],
+        searchSource: search.source,
       },
-    },
+    }),
     wishlist: {
       sources: matcher.sources,
       minEntryPerks: matcher.minEntryPerks,

@@ -1,6 +1,7 @@
 import { AccountSelection } from '../account/account-service.js';
 import { searchInventory } from '../inventory/inventory-search.js';
 import type { ProfileCacheOptions } from '../profile/profile-cache.js';
+import { resultEnvelope } from '../result.js';
 
 export interface ItemInspectOptions extends AccountSelection, ProfileCacheOptions {
   itemIds: string[];
@@ -33,6 +34,16 @@ export async function inspectItems(options: ItemInspectOptions) {
   return {
     ...result,
     ok: missingItemIds.length === 0,
+    ...resultEnvelope('item-inspect', {
+      query: {
+        itemIds: options.itemIds,
+        details: ['perks', 'stats'],
+      },
+      source: {
+        composedFrom: ['inventory.search'],
+        searchSource: result.source,
+      },
+    }),
     requestedItemIds: options.itemIds,
     missingItemIds,
     count: items.length,

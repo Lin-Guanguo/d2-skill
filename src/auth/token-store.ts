@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { chmod, readFile, rm, writeFile } from 'node:fs/promises';
 import { ensureDataDir, tokenFilePath } from '../config/paths.js';
+import { resultEnvelope } from '../result.js';
 
 export interface StoredToken {
   accessToken: string;
@@ -20,9 +21,19 @@ function tokenHash(token: string) {
   return createHash('sha256').update(token).digest('hex').slice(0, 12);
 }
 
-export function sanitizeStoredToken(token: StoredToken) {
+function tokenStoreSource() {
+  return {
+    store: 'local-token-file',
+    tokenFile: TOKEN_FILE,
+  };
+}
+
+export function sanitizeStoredToken(token: StoredToken, kind = 'auth-token') {
   return {
     ok: true,
+    ...resultEnvelope(kind, {
+      source: tokenStoreSource(),
+    }),
     authenticated: true,
     membershipId: token.membershipId,
     tokenType: token.tokenType,
@@ -54,18 +65,24 @@ export async function readTokenStatus() {
   if (!token) {
     return {
       ok: true,
+      ...resultEnvelope('auth-status', {
+        source: tokenStoreSource(),
+      }),
       authenticated: false,
       tokenFile: TOKEN_FILE,
     };
   }
 
-  return sanitizeStoredToken(token);
+  return sanitizeStoredToken(token, 'auth-status');
 }
 
 export async function deleteStoredToken() {
   await rm(TOKEN_FILE, { force: true });
   return {
     ok: true,
+    ...resultEnvelope('auth-logout', {
+      source: tokenStoreSource(),
+    }),
     authenticated: false,
     tokenFile: TOKEN_FILE,
   };

@@ -2,6 +2,7 @@ import { login, refreshStoredToken } from '../auth/oauth.js';
 import { deleteStoredToken, readTokenStatus } from '../auth/token-store.js';
 import { tokenFilePath } from '../config/paths.js';
 import { runCommand } from '../output.js';
+import { resultEnvelope } from '../result.js';
 import { D2Command, parsePositiveInteger } from './shared-options.js';
 
 export function createAuthCommand() {
@@ -52,7 +53,16 @@ export function createAuthCommand() {
   auth
     .command('path')
     .description('Print the local token file path')
-    .action(() => runCommand(async () => ({ ok: true, tokenFile: tokenFilePath() })));
+    .action(() => runCommand(async () => ({
+      ok: true,
+      ...resultEnvelope('auth-path', {
+        source: {
+          store: 'local-token-file',
+          tokenFile: tokenFilePath(),
+        },
+      }),
+      tokenFile: tokenFilePath(),
+    })));
 
   return auth;
 }

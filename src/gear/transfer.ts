@@ -5,6 +5,7 @@ import { buildInventoryView, type PublicCharacter } from '../inventory/inventory
 import type { InventoryItemRecord, PublicItem } from '../items/item-model.js';
 import { loadInventorySnapshot } from '../profile/profile-service.js';
 import type { ProfileCacheOptions } from '../profile/profile-cache.js';
+import { resultEnvelope } from '../result.js';
 import { formatExecutionError, waitBetweenGearActions } from './execution.js';
 
 export interface TransferOptions extends AccountSelection, ProfileCacheOptions {
@@ -220,7 +221,20 @@ export async function buildTransferPlan(options: TransferOptions) {
 
   return {
     ok: plans.every((plan) => plan.ok),
+    ...resultEnvelope('gear-transfer-plan', {
+      query: {
+        itemIds: options.itemIds,
+        target: options.target,
+        amount,
+      },
+      source: {
+        endpoint: 'Destiny2.GetProfile',
+        components: snapshot.profileCache.components,
+        executionEndpoint: 'Destiny2.TransferItem',
+      },
+    }),
     dryRun: true,
+    executed: false,
     account: snapshot.account,
     profileMintedAt: view.profileMintedAt,
     profileCache: snapshot.profileCache,
@@ -238,6 +252,13 @@ export async function executeTransferPlan(options: ExecuteTransferOptions) {
   if (invalidPlans.length && !options.continueOnError) {
     return {
       ...plan,
+      ...resultEnvelope('gear-transfer-execute', {
+        query: {
+          ...plan.query,
+          continueOnError: options.continueOnError ?? false,
+        },
+        source: plan.source,
+      }),
       dryRun: false,
       ok: false,
       executed: false,
@@ -292,7 +313,15 @@ export async function executeTransferPlan(options: ExecuteTransferOptions) {
 
   return {
     ok: results.every((result) => result.ok),
+    ...resultEnvelope('gear-transfer-execute', {
+      query: {
+        ...plan.query,
+        continueOnError: options.continueOnError ?? false,
+      },
+      source: plan.source,
+    }),
     executed: true,
+    dryRun: false,
     account: plan.account,
     profileMintedAt: plan.profileMintedAt,
     profileCache: plan.profileCache,
