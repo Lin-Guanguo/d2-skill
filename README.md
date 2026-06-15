@@ -71,6 +71,7 @@ OAuth commands:
 ```bash
 pnpm dev auth login
 pnpm dev auth status
+pnpm dev auth doctor
 pnpm dev auth refresh
 pnpm dev auth logout
 ```

@@ -1,6 +1,6 @@
 ---
 name: d2-login
-description: Check or establish Bungie OAuth login for the repo-local Destiny 2 CLI, and serve as the index for the local D2 skill family. Use when a D2 skill needs authenticated Bungie API access, token status, refresh, logout, recovery from auth failures, or quick routing guidance across d2-info, d2-items, d2-progress, d2-stats, and d2-api.
+description: Check, diagnose, or establish Bungie OAuth login for the repo-local Destiny 2 CLI, and serve as the index for the local D2 skill family. Use when a D2 skill needs authenticated Bungie API access, token status, auth doctor diagnostics, refresh, logout, recovery from auth failures, or quick routing guidance across d2-info, d2-items, d2-progress, d2-stats, and d2-api.
 ---
 
 # D2 Login
@@ -11,7 +11,7 @@ Use this as the authentication gate and index for repo-local Destiny 2 skills. T
 
 Use the smallest skill that matches the user's intent:
 
-- `d2-login`: Bungie OAuth login, token status, refresh, logout, auth recovery, and skill routing.
+- `d2-login`: Bungie OAuth login, token status, local auth diagnostics, refresh, logout, auth recovery, and skill routing.
 - `d2-info`: official information, item source families, current acquisition routes, vendor routes, live vendor sales, costs, purchasable state, and affordability.
 - `d2-items`: owned items, rolls, wishlist evidence, duplicate cleanup, transfers, gear actions, socket inspection/free reusable plug insertion, and saved in-game loadouts.
 - `d2-progress`: profile progress, records/triumphs, collectibles, craftables, currencies, metrics, milestones, and current/available activity state.
@@ -39,6 +39,14 @@ Parse stdout JSON only; stderr is human guidance. If `authenticated` is `true` a
 ```bash
 node dist/cli.js auth refresh
 ```
+
+If configuration, redirect URI, token-file, or missing-secret state is unclear, diagnose first:
+
+```bash
+node dist/cli.js auth doctor
+```
+
+Use `summary.errors`, `summary.warnings`, and failed `checks[]` entries to explain the local issue. `settings` never contains raw secrets; use booleans such as `apiKeyPresent` and `clientSecretPresent`.
 
 If unauthenticated, or refresh fails because no refresh token exists, start login:
 

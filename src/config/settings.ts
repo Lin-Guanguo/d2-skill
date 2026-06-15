@@ -25,9 +25,9 @@ export interface Settings {
   };
 }
 
-const DEFAULT_AUTHORIZATION_URL = 'https://www.bungie.net/en/OAuth/Authorize';
-const DEFAULT_TOKEN_URL = 'https://www.bungie.net/platform/app/oauth/token/';
-const DEFAULT_MANIFEST_LANGUAGE: DestinyManifestLanguage = 'zh-chs';
+export const DEFAULT_AUTHORIZATION_URL = 'https://www.bungie.net/en/OAuth/Authorize';
+export const DEFAULT_TOKEN_URL = 'https://www.bungie.net/platform/app/oauth/token/';
+export const DEFAULT_MANIFEST_LANGUAGE: DestinyManifestLanguage = 'zh-chs';
 const DEFAULT_REPORT_DUNGEON_HISTORY = {
   character: 'all',
   count: 250,
@@ -40,7 +40,7 @@ const SUPPORTED_MANIFEST_LANGUAGES = new Set<string>(destinyManifestLanguages);
 
 let loaded = false;
 
-function loadEnv() {
+export function loadSettingsEnv() {
   if (!loaded) {
     loadDotenv({ quiet: true });
     loaded = true;
@@ -135,7 +135,7 @@ function readReportSettings() {
 }
 
 export function readSettings(): Settings {
-  loadEnv();
+  loadSettingsEnv();
 
   return {
     apiKey: readRequired('API_KEY'),

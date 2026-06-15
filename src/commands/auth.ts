@@ -1,3 +1,4 @@
+import { runAuthDoctor } from '../auth/doctor.js';
 import { login, refreshStoredToken } from '../auth/oauth.js';
 import { deleteStoredToken, readTokenStatus } from '../auth/token-store.js';
 import { tokenFilePath } from '../config/paths.js';
@@ -39,6 +40,11 @@ export function createAuthCommand() {
     .command('status')
     .description('Show whether a Bungie OAuth token is stored locally')
     .action(() => runCommand(() => readTokenStatus()));
+
+  auth
+    .command('doctor')
+    .description('Diagnose local Bungie OAuth configuration and token state')
+    .action(() => runCommand(() => runAuthDoctor()));
 
   auth
     .command('refresh')
