@@ -13,7 +13,7 @@ Use the smallest skill that matches the user's intent:
 
 - `d2-login`: Bungie OAuth login, token status, local auth diagnostics, refresh, logout, auth recovery, and skill routing.
 - `d2-info`: official information, item source families, current acquisition routes, vendor routes, live vendor sales, costs, purchasable state, and affordability.
-- `d2-items`: owned items, rolls, wishlist evidence, duplicate cleanup, transfers, gear actions, socket inspection/free reusable plug insertion, and saved in-game loadouts.
+- `d2-items`: owned item facts, roll and wishlist evidence, duplicate cleanup review, transfers, safe atomic gear actions, socket inspection/free reusable plug insertion, and saved in-game loadout inspection.
 - `d2-progress`: profile progress, records/triumphs, collectibles, craftables, currencies, metrics, milestones, and current/available activity state.
 - `d2-stats`: activity history, PGCRs, character ids, personal historical stats, dungeon reports, clan rewards, clan aggregate stats, and clan leaderboards.
 - `d2-api`: last-resort read-only Bungie `/Platform/...` API fallback when no domain skill or atomic CLI command exposes the needed official surface.

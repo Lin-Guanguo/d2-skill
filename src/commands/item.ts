@@ -13,7 +13,7 @@ interface InspectOptions extends AccountOptions, ProfileCacheCliOptions {
 }
 
 export function createItemCommand() {
-  const item = new D2Command('item').description('Inspect and analyze Destiny 2 item details');
+  const item = new D2Command('item').description('Inspect Destiny 2 item details');
 
   addRepeatedItemIdOption(
     item

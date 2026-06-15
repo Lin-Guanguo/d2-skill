@@ -1,11 +1,13 @@
 ---
 name: d2-items
-description: Manage Destiny 2 inventory items and saved in-game loadouts through the repo-local CLI. Use when a task needs owned item search, vault or character inventory lookup, duplicate grouping, wishlist evidence, item instance inspection, perk/stat or roll analysis, duplicate cleanup review, transfer planning, item movement, equip, lock/unlock, postmaster pull, socket inspection, free reusable plug insertion, loadout slot lists, or saved loadout contents.
+description: Query Destiny 2 owned item facts and run safe atomic item actions through the repo-local CLI. Use when a task needs owned item search, vault or character inventory lookup, duplicate grouping, wishlist evidence, item instance inspection, perk/stat or roll evidence, duplicate cleanup review, transfer planning, item movement, equip, lock/unlock, postmaster pull, socket inspection, free reusable plug insertion, loadout slot lists, or saved loadout contents.
 ---
 
 # D2 Items
 
-Use this skill for Destiny 2 item management. The CLI owns Bungie API calls, OAuth, profile snapshots, transfer execution, and persistence; this skill runs CLI commands and interprets stdout JSON.
+Use this skill for Destiny 2 owned item facts and safe atomic item actions. The CLI owns Bungie API calls, OAuth, profile snapshots, transfer execution, and persistence; this skill runs CLI commands and interprets stdout JSON.
+
+Keep composite judgment in the agent: use CLI output as evidence for roll review, duplicate cleanup, and move sequencing. Do not expect the CLI to choose dismantle targets, build smart moves, or explain rolls as final advice.
 
 ## Run
 
