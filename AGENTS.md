@@ -20,8 +20,16 @@
 - Prefer small CLI commands that do one job well over monolithic workflows.
 - Design commands as composable tools: search, inspect, parse, score, group, plan, and execute should remain separable unless combining them is the actual user-facing behavior.
 - Let the CLI provide deterministic facts, evidence, scores, and safe execution primitives; let the AI compose commands, compare tradeoffs, and make context-sensitive recommendations.
-- Avoid hiding irreversible or subjective decisions inside CLI automation. For cleanup workflows, the CLI should identify and move candidates when asked; the user handles in-game dismantling.
+- Avoid hiding irreversible or subjective decisions inside CLI automation. For cleanup workflows, the CLI should expose duplicate groups, wishlist evidence, item inspection, and safe transfer primitives; AI and user judgment select any items to move, and the user handles in-game dismantling.
 - Keep intermediate outputs useful for follow-up commands and agent reasoning. Prefer stable identifiers, source metadata, reasons, and evidence over prose-only summaries.
+
+## Scope Discipline
+
+- Optimize for reduction before expansion when command boundaries feel unclear.
+- Do not add broad aggregate commands such as top-level search, smart cleanup, smart move, or roll explanation unless the user explicitly asks for that product behavior and the boundary is documented as composite.
+- If a command combines multiple lower-level facts, mark the output source with composite metadata such as `composite` or `composedFrom`, and keep the lower-level commands usable on their own.
+- Keep subjective ranking, tradeoff comparison, and final recommendations in skills or agent reasoning unless the CLI output is explicitly a deterministic score or evidence bucket.
+- When a fallback `api request` pattern becomes useful repeatedly, promote it into a narrow domain command before updating skills to depend on it.
 
 ## Bungie API and Manifest Boundaries
 
@@ -34,8 +42,16 @@
 
 ## Skill Boundaries
 
-- Extend an existing skill when the new workflow belongs to the same capability area.
-- Create a new skill for a distinct capability area, such as login, items, characters, loadouts, or inventory.
+- Keep the D2 skill family grouped by AI usage, not by every CLI module or implementation detail.
+- Use these default capability groups:
+  - `d2-login`: authentication, auth diagnostics, and skill routing.
+  - `d2-info`: official information, item sources, vendor routes, vendor sales, costs, affordability, and current acquisition evidence.
+  - `d2-items`: owned items, roll and wishlist evidence, duplicate review, transfers, safe gear actions, sockets, and read-only in-game loadouts.
+  - `d2-progress`: currencies, records, collectibles, craftables, metrics, milestones, and current or available activity state.
+  - `d2-stats`: characters, activity history, PGCRs, historical stats, dungeon reports, clan rewards, clan aggregate stats, and leaderboards.
+  - `d2-api`: read-only Bungie `/Platform/...` fallback and SDK coverage diagnostics when no domain skill exposes the needed official surface.
+- Extend an existing skill when the new workflow belongs to one of these capability groups.
+- Create a new skill only for a distinct AI usage mode that does not fit the current family. Do not split out vendors, search, clan, loadouts, or cleanup merely because the CLI has separate implementation modules.
 - Let other skills call `d2-login` when authenticated Bungie API access is required and status is missing, expired, or rejected.
 - Keep skills concise and repo-portable. Do not use user-specific absolute paths.
 - Validate changed skills with the skill validator before finishing.
