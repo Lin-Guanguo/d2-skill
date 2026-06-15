@@ -1,6 +1,6 @@
 ---
 name: d2-login
-description: Check or establish Bungie OAuth login for the repo-local Destiny 2 CLI, and serve as the index for the local D2 skill family. Use when a D2 skill needs authenticated Bungie API access, token status, refresh, logout, recovery from auth failures, or quick routing guidance across d2-info, d2-items, d2-progress, and d2-stats.
+description: Check or establish Bungie OAuth login for the repo-local Destiny 2 CLI, and serve as the index for the local D2 skill family. Use when a D2 skill needs authenticated Bungie API access, token status, refresh, logout, recovery from auth failures, or quick routing guidance across d2-info, d2-items, d2-progress, d2-stats, and d2-api.
 ---
 
 # D2 Login
@@ -16,6 +16,7 @@ Use the smallest skill that matches the user's intent:
 - `d2-items`: owned items, rolls, wishlist evidence, duplicate cleanup, transfers, gear actions, socket inspection/free reusable plug insertion, and saved in-game loadouts.
 - `d2-progress`: profile progress, records/triumphs, collectibles, craftables, currencies, metrics, milestones, and current/available activity state.
 - `d2-stats`: activity history, PGCRs, character ids, personal historical stats, dungeon reports, clan rewards, clan aggregate stats, and clan leaderboards.
+- `d2-api`: last-resort read-only Bungie `/Platform/...` API fallback when no domain skill or atomic CLI command exposes the needed official surface.
 
 Keep Bungie API calls, OAuth handling, persistence, and business logic in the CLI. Skills should call `node dist/cli.js ...`, parse stdout JSON, and use `audit.path` as the saved evidence path.
 

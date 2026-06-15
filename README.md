@@ -39,6 +39,7 @@ Current structure:
 - `src/commands/`: command definitions.
 - `src/account/`: Destiny account resolution.
 - `src/activity/`: raw activity history and PGCR queries.
+- `src/api/`: read-only low-level Bungie API fallback.
 - `src/bungie/`: Bungie API HTTP client.
 - `src/cache/`: local SQLite cache.
 - `src/characters/`: character listing and character selection helpers.
@@ -116,6 +117,18 @@ Manifest commands:
 node dist/cli.js manifest update
 node dist/cli.js manifest update --language en
 ```
+
+Low-level API fallback commands:
+
+```bash
+node dist/cli.js api request --path /Platform/Destiny2/Manifest/
+node dist/cli.js api request --path /Platform/Destiny2/2/Profile/<membershipId>/ --param components=100,200 --auth
+```
+
+`api request` is a read-only GET fallback for official Bungie `/Platform/...`
+endpoints that do not yet have a dedicated atomic command. Prefer domain
+commands for normal workflows, and promote repeated fallback patterns into
+stable CLI commands before updating skills.
 
 Inventory and item commands:
 

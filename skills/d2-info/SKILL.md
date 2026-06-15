@@ -123,8 +123,8 @@ For example, if `Tenet of Bravery` sells `Solstice Weapon Engram` and `preview.h
 
 ## Exploration Fallback
 
-Write a temporary Node script only when the current CLI output is missing an API surface needed for the question, such as a new vendor component, a preview structure not summarized by the CLI, or a one-time manifest table inspection.
+Use `d2-api` for a one-off read-only Bungie `/Platform/...` request only when the current domain CLI output is missing an API surface needed for the question, such as a new vendor component, a preview structure not summarized by the CLI, or a one-time manifest table inspection.
 
-When a temporary script reveals a repeatable workflow, promote it into a CLI command before updating this skill. Keep Bungie API calls, OAuth handling, persistence, and business logic in the CLI, not in skill instructions.
+Write a temporary script only when `d2-api` cannot express the read-only investigation, such as paginated multi-call exploration or joining multiple response shapes. When fallback exploration reveals a repeatable workflow, promote it into a CLI command before updating this skill. Keep Bungie API calls, OAuth handling, persistence, and business logic in the CLI, not in skill instructions.
 
 Do not use `d2-items` for this unless the user asks about owned copies, rolls, transfer, duplicate cleanup, or wishlist evidence. Do not use `d2-stats` unless the user asks about characters, activities, PGCRs, player statistics, or clan leaderboards.

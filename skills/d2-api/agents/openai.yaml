@@ -1,0 +1,4 @@
+interface:
+  display_name: "D2 API"
+  short_description: "Read-only low-level Bungie API fallback."
+  default_prompt: "Use $d2-api to make a read-only Bungie /Platform/... API fallback request when the normal D2 skills do not expose the needed surface."
