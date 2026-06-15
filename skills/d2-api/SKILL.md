@@ -1,6 +1,6 @@
 ---
 name: d2-api
-description: Low-level read-only Bungie.net /Platform API fallback through the repo-local Destiny 2 CLI. Use only when d2-info, d2-items, d2-progress, or d2-stats do not expose a needed official Bungie API surface, when the user explicitly asks for a raw Bungie API endpoint/component, or when one-off read-only API exploration is needed before promoting a repeatable workflow into a proper CLI command.
+description: Low-level read-only Bungie.net /Platform API fallback and SDK coverage diagnostics through the repo-local Destiny 2 CLI. Use only when d2-info, d2-items, d2-progress, or d2-stats do not expose a needed official Bungie API surface, when the user explicitly asks for a raw Bungie API endpoint/component, when auditing current Bungie SDK endpoint coverage, or when one-off read-only API exploration is needed before promoting a repeatable workflow into a proper CLI command.
 ---
 
 # D2 API
@@ -42,11 +42,21 @@ Use repeated `--param key=value` for query parameters. `--path` accepts:
 - `Destiny2/...`, which is normalized to `/Platform/Destiny2/...`
 - `https://www.bungie.net/Platform/...`
 
+SDK coverage diagnostic:
+
+```bash
+test -f dist/cli.js || pnpm build
+node dist/cli.js api coverage
+node dist/cli.js api coverage --module destiny2 --module groupv2
+```
+
+Use `api coverage` for maintainer planning, not player-facing answers. It is offline and reports `bungie-api-ts` endpoint functions grouped by module, which endpoint functions are imported under `src/`, and which SDK endpoints are not currently used by the repo.
+
 ## Output
 
 Parse stdout JSON only. Stderr is human diagnostics.
 
-Important fields:
+Important `api request` fields:
 
 - `kind`: `api-request`
 - `query.method`: always `GET`
@@ -55,6 +65,15 @@ Important fields:
 - `source.readOnly`: always `true`
 - `source.raw`: always `true`
 - `response`: raw Bungie API response
+
+Important `api coverage` fields:
+
+- `kind`: `api-coverage`
+- `summary.sdkEndpoints`: endpoint functions exported by inspected SDK modules
+- `summary.usedSdkEndpoints`: endpoint functions imported by repo source
+- `summary.unusedSdkEndpoints`: endpoint functions available in the SDK but not imported by repo source
+- `modules[].usedSdkEndpoints[].files`: source files importing each endpoint
+- `fallback.command`: the raw fallback command, currently `api request`
 
 Use `audit.path` as the saved evidence path for follow-up reasoning.
 
@@ -67,5 +86,7 @@ Use `--auth` only for endpoints that require OAuth. If auth is missing, expired,
 ## Promotion Rule
 
 Use `api request` for one-off exploration. When the same query pattern becomes useful for normal user tasks, implement a dedicated CLI command with stable JSON output first, then update the matching domain skill.
+
+Use `api coverage` before planning broad Bungie API wrapper work. Treat `usedSdkEndpoints` as "used somewhere in source", not proof of a complete user-facing command.
 
 Write a temporary script only when `api request` cannot express the read-only investigation, such as paginated multi-call exploration, joining manifest tables, or decoding a response shape before designing a reusable command.

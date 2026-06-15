@@ -124,12 +124,18 @@ Low-level API fallback commands:
 ```bash
 node dist/cli.js api request --path /Platform/Destiny2/Manifest/
 node dist/cli.js api request --path /Platform/Destiny2/2/Profile/<membershipId>/ --param components=100,200 --auth
+node dist/cli.js api coverage
 ```
 
 `api request` is a read-only GET fallback for official Bungie `/Platform/...`
 endpoints that do not yet have a dedicated atomic command. Prefer domain
 commands for normal workflows, and promote repeated fallback patterns into
 stable CLI commands before updating skills.
+
+`api coverage` is an offline maintainer diagnostic. It compares
+`bungie-api-ts` endpoint functions with SDK endpoints currently imported by
+`src/`, so future CLI wrapper work can start from a stable JSON inventory
+instead of ad hoc source searches.
 
 Inventory and item commands:
 

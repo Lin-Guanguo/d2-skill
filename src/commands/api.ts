@@ -1,3 +1,4 @@
+import { getApiCoverage } from '../api/api-coverage.js';
 import { requestBungieApi } from '../api/api-request.js';
 import { runCommand } from '../output.js';
 import {
@@ -9,6 +10,10 @@ interface ApiRequestCliOptions {
   path: string;
   param?: string[];
   auth?: boolean;
+}
+
+interface ApiCoverageCliOptions {
+  module?: string[];
 }
 
 export function createApiCommand() {
@@ -26,6 +31,18 @@ export function createApiCommand() {
           path: options.path,
           params: options.param,
           auth: options.auth,
+        }),
+      ),
+    );
+
+  api
+    .command('coverage')
+    .description('Summarize Bungie SDK endpoint usage in this CLI')
+    .option('--module <name>', 'bungie-api-ts module to inspect; repeat for multiple modules', collect, [])
+    .action((options: ApiCoverageCliOptions) =>
+      runCommand(() =>
+        getApiCoverage({
+          modules: options.module,
         }),
       ),
     );
