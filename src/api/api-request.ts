@@ -16,6 +16,11 @@ export interface ApiRequestOptions {
   now?: () => Date;
 }
 
+export interface ApiRequestParam {
+  key: string;
+  value: string;
+}
+
 function isPlatformPath(pathname: string) {
   return pathname === '/Platform' || pathname.startsWith(PLATFORM_PREFIX);
 }
@@ -50,7 +55,7 @@ export function resolveBungieApiUrl(input: string) {
 }
 
 export function parseRequestParams(params: string[] = []) {
-  const parsed: Record<string, string> = {};
+  const parsed: ApiRequestParam[] = [];
   for (const param of params) {
     const separator = param.indexOf('=');
     if (separator < 1) {
@@ -62,15 +67,19 @@ export function parseRequestParams(params: string[] = []) {
     if (!key) {
       throw new Error(`Expected --param key=value, got "${param}".`);
     }
-    parsed[key] = value;
+    parsed.push({ key, value });
   }
   return parsed;
 }
 
-export function applyRequestParams(url: string, params: Record<string, string>) {
+function requestParamsRecord(params: readonly ApiRequestParam[]) {
+  return Object.fromEntries(params.map((param) => [param.key, param.value]));
+}
+
+export function applyRequestParams(url: string, params: readonly ApiRequestParam[]) {
   const endpoint = new URL(url);
-  for (const [key, value] of Object.entries(params)) {
-    endpoint.searchParams.set(key, value);
+  for (const { key, value } of params) {
+    endpoint.searchParams.append(key, value);
   }
   return endpoint.toString();
 }
@@ -93,7 +102,8 @@ export async function requestBungieApi(options: ApiRequestOptions) {
         method: 'GET',
         path: options.path,
         url: endpoint,
-        params,
+        params: requestParamsRecord(params),
+        paramEntries: params,
         authenticated: options.auth ?? false,
       },
       source: {

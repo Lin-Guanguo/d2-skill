@@ -35,22 +35,24 @@ test('resolveBungieApiUrl rejects non-platform URLs', () => {
 });
 
 test('parseRequestParams parses repeated key value options', () => {
-  assert.deepEqual(parseRequestParams(['lc = zh-chs ', 'page=1', 'q=a=b']), {
-    lc: 'zh-chs',
-    page: '1',
-    q: 'a=b',
-  });
+  assert.deepEqual(parseRequestParams(['lc = zh-chs ', 'page=1', 'q=a=b', 'page=2']), [
+    { key: 'lc', value: 'zh-chs' },
+    { key: 'page', value: '1' },
+    { key: 'q', value: 'a=b' },
+    { key: 'page', value: '2' },
+  ]);
   assert.throws(() => parseRequestParams(['missing-separator']));
   assert.throws(() => parseRequestParams([' = value']));
 });
 
-test('applyRequestParams preserves URL query and applies explicit params', () => {
+test('applyRequestParams preserves URL query and appends explicit params', () => {
   assert.equal(
-    applyRequestParams('https://www.bungie.net/Platform/Destiny2/Manifest/?lc=en', {
-      lc: 'zh-chs',
-      page: '1',
-    }),
-    'https://www.bungie.net/Platform/Destiny2/Manifest/?lc=zh-chs&page=1',
+    applyRequestParams('https://www.bungie.net/Platform/Destiny2/Manifest/?lc=en', [
+      { key: 'lc', value: 'zh-chs' },
+      { key: 'page', value: '1' },
+      { key: 'page', value: '2' },
+    ]),
+    'https://www.bungie.net/Platform/Destiny2/Manifest/?lc=en&lc=zh-chs&page=1&page=2',
   );
 });
 
@@ -72,7 +74,7 @@ test('requestBungieApi returns a raw read-only result envelope', async () => {
   assert.deepEqual(requests, [
     {
       method: 'GET',
-      url: 'https://www.bungie.net/Platform/Destiny2/Manifest/?lc=zh-chs',
+      url: 'https://www.bungie.net/Platform/Destiny2/Manifest/?lc=en&lc=zh-chs',
     },
   ]);
   assert.deepEqual(result, {
@@ -82,12 +84,13 @@ test('requestBungieApi returns a raw read-only result envelope', async () => {
     query: {
       method: 'GET',
       path: '/Platform/Destiny2/Manifest/?lc=en',
-      url: 'https://www.bungie.net/Platform/Destiny2/Manifest/?lc=zh-chs',
+      url: 'https://www.bungie.net/Platform/Destiny2/Manifest/?lc=en&lc=zh-chs',
       params: { lc: 'zh-chs' },
+      paramEntries: [{ key: 'lc', value: 'zh-chs' }],
       authenticated: true,
     },
     source: {
-      endpoint: 'https://www.bungie.net/Platform/Destiny2/Manifest/?lc=zh-chs',
+      endpoint: 'https://www.bungie.net/Platform/Destiny2/Manifest/?lc=en&lc=zh-chs',
       readOnly: true,
       raw: true,
     },

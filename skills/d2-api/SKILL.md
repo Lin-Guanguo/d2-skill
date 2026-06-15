@@ -61,6 +61,8 @@ Important `api request` fields:
 - `kind`: `api-request`
 - `query.method`: always `GET`
 - `query.url`: normalized final endpoint including query parameters
+- `query.paramEntries`: ordered `--param` entries; use this when repeated keys matter
+- `query.params`: compact last-value map for quick inspection
 - `query.authenticated`: whether `--auth` was requested
 - `source.readOnly`: always `true`
 - `source.raw`: always `true`
