@@ -23,12 +23,15 @@ node dist/cli.js info entity-search --type DestinyInventoryItemDefinition --term
 node dist/cli.js info entity --type DestinyInventoryItemDefinition --hash '<hash>'
 node dist/cli.js info public-milestones
 node dist/cli.js info public-vendors
+node dist/cli.js manifest status
+node dist/cli.js manifest status --language en
 ```
 
 - `entity-search`: search official manifest data by definition type and term. It attempts Bungie's entity search first and falls back to the local manifest cache when the official search endpoint cannot satisfy the query.
 - `entity`: fetch one official entity definition by type and hash. It prefers the localized local manifest cache for supported tables and uses Bungie's entity endpoint as fallback.
 - `public-milestones`: list current public milestone hashes, localized display data, dates, activity counts, quest counts, and related vendors from Bungie's public milestone endpoint.
 - `public-vendors`: list character-agnostic public vendor sales. This is smaller than character-scoped `GetVendors`; use `vendor` commands for current character-specific sale, cost, and affordability checks.
+- `manifest status`: inspect local manifest cache metadata without network requests. Use it when localized search or cache state is unclear, especially after switching `D2_MANIFEST_LANGUAGE`.
 
 ## Item Source
 

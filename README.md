@@ -115,6 +115,8 @@ reasoning.
 Manifest commands:
 
 ```bash
+node dist/cli.js manifest status
+node dist/cli.js manifest status --language en
 node dist/cli.js manifest update
 node dist/cli.js manifest update --language en
 ```

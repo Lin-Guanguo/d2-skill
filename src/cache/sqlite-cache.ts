@@ -6,6 +6,21 @@ interface CacheRow {
   expires_at: string | null;
 }
 
+interface CacheEntryRow {
+  namespace: string;
+  key: string;
+  updated_at: string;
+  expires_at: string | null;
+}
+
+export interface CacheEntryMetadata {
+  namespace: string;
+  key: string;
+  updatedAt: string;
+  expiresAt?: string;
+  expired: boolean;
+}
+
 interface CacheSetOptions {
   expiresAt?: string;
 }
@@ -175,4 +190,28 @@ export async function deleteCacheNamespace(namespace: string) {
   await retrySqliteLocked(() =>
     db.prepare('DELETE FROM cache_entries WHERE namespace = ?').run(namespace),
   );
+}
+
+export async function listCacheEntries(namespace: string): Promise<CacheEntryMetadata[]> {
+  const db = await openDatabase();
+  const rows = await retrySqliteLocked(() =>
+    db
+      .prepare(
+        [
+          'SELECT namespace, key, updated_at, expires_at',
+          'FROM cache_entries',
+          'WHERE namespace = ?',
+          'ORDER BY key',
+        ].join(' '),
+      )
+      .all(namespace) as unknown as CacheEntryRow[],
+  );
+
+  return rows.map((row) => ({
+    namespace: row.namespace,
+    key: row.key,
+    updatedAt: row.updated_at,
+    ...(row.expires_at ? { expiresAt: row.expires_at } : {}),
+    expired: isExpired(row.expires_at),
+  }));
 }

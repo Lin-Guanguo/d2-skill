@@ -1,5 +1,5 @@
 import { type ManifestLanguage, parseManifestLanguage } from '../config/settings.js';
-import { updateDisplayManifest } from '../manifest/manifest-service.js';
+import { getManifestStatus, updateDisplayManifest } from '../manifest/manifest-service.js';
 import { runCommand } from '../output.js';
 import { D2Command } from './shared-options.js';
 
@@ -15,6 +15,12 @@ export function createManifestCommand() {
     .description('Download and cache display-related manifest tables')
     .option('--language <language>', 'manifest language, such as zh-chs, zh-cht, or en', parseManifestLanguage)
     .action((options: UpdateOptions) => runCommand(() => updateDisplayManifest(options.language)));
+
+  manifest
+    .command('status')
+    .description('Show local manifest cache metadata without network requests')
+    .option('--language <language>', 'manifest language, such as zh-chs, zh-cht, or en', parseManifestLanguage)
+    .action((options: UpdateOptions) => runCommand(() => getManifestStatus(options.language)));
 
   return manifest;
 }
