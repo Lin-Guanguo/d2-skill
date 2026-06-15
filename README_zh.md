@@ -42,7 +42,7 @@ node dist/cli.js auth status
 - `API_KEY`: Bungie app API key。
 - `OAUTH_CLIENT_ID`: Bungie OAuth client ID。
 - `OAUTH_CLIENT_SECRET`: Bungie OAuth client secret。
-- `D2_MANIFEST_LANGUAGE`: 物品、perk、活动和商人名称使用的本地化 manifest 语言。默认是 `zh-chs`。
+- `D2_MANIFEST_LANGUAGE`: 物品、perk、活动和商人名称使用的本地化 manifest 语言。默认是 `zh-chs`；支持的值是 `de`、`en`、`es`、`es-mx`、`fr`、`it`、`ja`、`ko`、`pl`、`pt-br`、`ru`、`zh-chs` 和 `zh-cht`。
 
 OAuth token、dim 愿望单 cache、profile cache 和命令审计日志都会存放在仓库外的 `~/.d2-skill/`。
 

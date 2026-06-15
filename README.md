@@ -42,7 +42,7 @@ Useful environment settings:
 - `API_KEY`: Bungie app API key.
 - `OAUTH_CLIENT_ID`: Bungie OAuth client ID.
 - `OAUTH_CLIENT_SECRET`: Bungie OAuth client secret.
-- `D2_MANIFEST_LANGUAGE`: localized manifest language for item, perk, activity, and vendor names. Defaults to `zh-chs`.
+- `D2_MANIFEST_LANGUAGE`: localized manifest language for item, perk, activity, and vendor names. Defaults to `zh-chs`; supported values are `de`, `en`, `es`, `es-mx`, `fr`, `it`, `ja`, `ko`, `pl`, `pt-br`, `ru`, `zh-chs`, and `zh-cht`.
 
 OAuth tokens, wishlist caches, profile caches, and command audit logs are stored outside the repository under `~/.d2-skill/`.
 
