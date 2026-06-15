@@ -1,11 +1,11 @@
 ---
 name: d2-stats
-description: Query raw Destiny 2 character, activity, PGCR, personal historical statistics, and clan ranking data through the repo-local CLI. Use when a task needs activity history, post game carnage reports, character ids, dungeon or raid source data, historical stat definitions, per-character historical stats, unique weapon history, aggregate activity stats, clan memberships, clan weekly rewards, clan aggregate stats, or clan leaderboards.
+description: Query Destiny 2 character, activity, PGCR, personal historical statistics, and clan ranking facts through the repo-local CLI. Use when a task needs activity history, post game carnage reports, character ids, dungeon or raid source data, historical stat definitions, per-character historical stats, unique weapon history, aggregate activity stats, clan memberships, clan weekly rewards, clan aggregate stats, clan leaderboards, or an explicitly requested analyzed dungeon report.
 ---
 
 # d2-stats
 
-Use this skill for raw Destiny 2 data queries. The CLI prints pretty JSON to stdout.
+Use this skill for Destiny 2 activity, statistics, and clan fact queries. Prefer raw commands as reusable evidence. Use `report dungeon` only when the user explicitly wants an analyzed report or shareable report artifact.
 
 Call `d2-login` first when auth is missing, expired, or rejected.
 
@@ -74,7 +74,7 @@ node dist/cli.js clan aggregate-stats --group-id '<groupId>' --mode raid
 node dist/cli.js clan leaderboards --group-id '<groupId>' --mode raid --stat-id lbKills --max-top 10
 ```
 
-Build an analyzed dungeon summary:
+Build an analyzed dungeon summary only when requested:
 
 ```bash
 node dist/cli.js report dungeon
