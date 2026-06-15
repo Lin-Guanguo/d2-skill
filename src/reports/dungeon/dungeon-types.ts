@@ -103,6 +103,13 @@ export interface DungeonReportJson {
     refresh: boolean;
   };
   source: {
+    composite: true;
+    composedFrom: [
+      'activity.history',
+      'activity.pgcr',
+      'manifest.display',
+      'report.dungeon-analysis',
+    ];
     history: 'Destiny2.GetActivityHistory';
     pgcr: 'Destiny2.GetPostGameCarnageReport';
     manifest: 'Destiny2.GetDestinyManifestSlice';

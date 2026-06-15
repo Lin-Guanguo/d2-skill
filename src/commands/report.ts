@@ -21,11 +21,11 @@ interface DungeonReportCommandOptions extends AccountOptions, ProfileCacheCliOpt
 }
 
 export function createReportCommand() {
-  const report = new D2Command('report').description('Build analyzed Destiny 2 reports');
+  const report = new D2Command('report').description('Build composite analyzed Destiny 2 reports');
 
   report
     .command('dungeon')
-    .description('Build a dungeon performance summary report')
+    .description('Build a composite dungeon performance summary report')
     .option('--character <character>', 'current, all, or character id')
     .option('--count <count>', 'activities per page, max 250', parseMax250Count)
     .option('--page <page>', 'starting history page number', parseNonNegativeInteger)

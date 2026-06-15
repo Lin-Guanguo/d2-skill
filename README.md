@@ -105,6 +105,11 @@ node dist/cli.js report dungeon --refresh
 node dist/cli.js report dungeon --image
 ```
 
+`report` commands are composite convenience commands. Prefer the smaller
+atomic commands (`activity history`, `activity pgcr`, and manifest/profile
+lookup commands) when a workflow needs reusable evidence for follow-up
+reasoning.
+
 Manifest commands:
 
 ```bash

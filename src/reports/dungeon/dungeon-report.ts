@@ -634,6 +634,13 @@ export async function buildDungeonReport(options: DungeonReportOptions) {
       refresh: effectiveOptions.refresh ?? false,
     },
     source: {
+      composite: true,
+      composedFrom: [
+        'activity.history',
+        'activity.pgcr',
+        'manifest.display',
+        'report.dungeon-analysis',
+      ],
       history: 'Destiny2.GetActivityHistory',
       pgcr: 'Destiny2.GetPostGameCarnageReport',
       manifest: 'Destiny2.GetDestinyManifestSlice',

@@ -96,7 +96,7 @@ node dist/cli.js report dungeon --image
 - `clan leaderboards` returns Bungie's nested mode/stat leaderboard object under `leaderboards`.
 - `clan aggregate-stats` and `clan leaderboards` are Bungie preview endpoints. If Bungie rejects them, the CLI returns `ok: false`, `degraded: true`, and structured `error`.
 - `character list` and `activity history --character current` use a cached character profile by default; use `--refresh-profile` when current-character resolution must be exact.
-- `report dungeon` uses cached history and PGCR inputs and returns analyzed JSON. Use `--refresh` when fresh report inputs matter.
+- `report dungeon` is a composite report on top of activity history, PGCR, manifest lookup, and report-layer analysis. Use raw `activity history` and `activity pgcr` when atomic evidence is needed; use `--refresh` when fresh report inputs matter.
 - Commands include `audit.path` in stdout JSON; use it to reopen the saved command output if the terminal output is gone.
 - `report dungeon --image` writes a shareable PNG beside the command audit file and returns its path in `artifact.path`.
 - If `artifactError` is present, use the returned report JSON; retry only when the image is required.
