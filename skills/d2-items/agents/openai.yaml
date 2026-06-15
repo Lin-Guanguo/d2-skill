@@ -1,4 +1,4 @@
 interface:
   display_name: "D2 Items"
   short_description: "Query owned D2 items and safe actions."
-  default_prompt: "Use $d2-items to search, inspect, review roll evidence, transfer, equip, lock, modify reusable plugs, or inspect saved in-game loadouts."
+  default_prompt: "Use $d2-items to search, inspect, review roll evidence, transfer, equip, lock, modify reusable plugs, or manage in-game loadouts."

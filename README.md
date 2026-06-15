@@ -13,7 +13,7 @@ This project gives an AI agent a safe, inspectable bridge into Destiny 2 data. I
 - Run safe atomic gear actions: transfer, equip, lock/unlock, postmaster pull, and free reusable plug insertion. Destructive in-game actions such as dismantling are not automated.
 - Read game progress: currencies, triumph records, collectibles, craftables, metrics, progressions, milestones, and available activities.
 - Query activity and stat data: character list, activity history, PGCRs, historical stats, weapon usage, clan rewards, clan stats, leaderboards, and composite dungeon reports.
-- Inspect in-game loadout slots. Loadout application/editing is not implemented yet.
+- Inspect and manage in-game loadout slots: equip, snapshot current gear, clear a slot, and update name/icon/color identifiers.
 - Fall back to read-only raw Bungie `/Platform/...` requests when a useful official API surface is not wrapped yet.
 
 ## Quick Start
@@ -52,7 +52,7 @@ Use Claude Code, Codex, OpenClaw, or another agent from this repository root. Th
 
 - `d2-login`: authentication, token health, auth recovery, and routing to the right D2 skill.
 - `d2-info`: official information, item sources, vendor routes, live sales, costs, affordability, and current acquisition evidence.
-- `d2-items`: owned items, roll and wishlist evidence, duplicate review, transfers, safe gear actions, sockets, and read-only in-game loadouts.
+- `d2-items`: owned items, roll and wishlist evidence, duplicate review, transfers, safe gear actions, sockets, and in-game loadout management.
 - `d2-progress`: currencies, records, collectibles, craftables, metrics, milestones, and current or available activity state.
 - `d2-stats`: characters, activity history, PGCRs, historical stats, dungeon reports, clan rewards, clan aggregate stats, and leaderboards.
 - `d2-api`: read-only Bungie `/Platform/...` fallback and SDK coverage diagnostics.
@@ -70,6 +70,7 @@ node dist/cli.js inventory search --name '<item name>' --details perks,stats
 node dist/cli.js inventory duplicates --type weapon --details perks --limit 20
 node dist/cli.js item inspect --item-id <itemInstanceId>
 node dist/cli.js gear transfer plan --item-id <itemInstanceId> --target vault
+node dist/cli.js loadout equip plan --character current --index 0
 node dist/cli.js profile craftables --name '<weapon name>'
 node dist/cli.js activity history --character current --mode dungeon --count 50
 node dist/cli.js report dungeon
@@ -104,7 +105,7 @@ Core layout:
 - `src/auth/`, `src/account/`, `src/characters/`: login and account context.
 - `src/info/`, `src/vendors/`, `src/manifest/`: official info, item source, vendor, and manifest logic.
 - `src/inventory/`, `src/items/`, `src/wishlist/`: owned item facts and roll evidence.
-- `src/gear/`, `src/sockets/`, `src/loadouts/`: safe item actions, socket inspection, and read-only in-game loadouts.
+- `src/gear/`, `src/sockets/`, `src/loadouts/`: safe item actions, socket inspection, and in-game loadout management.
 - `src/profile/`, `src/activity/`, `src/stats/`, `src/clan/`, `src/reports/`: progress, activity, stats, clan data, and reports.
 - `src/api/`: read-only raw Bungie API fallback and SDK coverage diagnostics.
 - `skills/`: agent-facing skill instructions.

@@ -100,10 +100,17 @@ test('item-source, inventory, and loadout surfaces do not hide composite decisio
     'wishlist',
   ]);
   assert.equal(commandNames(child(program, 'inventory')).includes('cleanup-candidates'), false);
-  assert.deepEqual(commandNames(child(program, 'loadout')), ['list', 'inspect']);
+  assert.deepEqual(commandNames(child(program, 'loadout')), [
+    'list',
+    'inspect',
+    'equip',
+    'snapshot',
+    'clear',
+    'identifiers',
+  ]);
 });
 
-test('write-capable gear and socket commands expose plan and execute primitives', () => {
+test('write-capable gear, socket, and loadout commands expose plan and execute primitives', () => {
   const program = createProgram();
   const gear = child(program, 'gear');
 
@@ -112,6 +119,11 @@ test('write-capable gear and socket commands expose plan and execute primitives'
   }
   assert.deepEqual(commandNames(child(child(gear, 'postmaster'), 'pull')), ['plan', 'execute']);
   assert.deepEqual(commandNames(child(child(program, 'socket'), 'insert-free')), ['plan', 'execute']);
+  const loadout = child(program, 'loadout');
+  for (const action of ['equip', 'snapshot', 'clear']) {
+    assert.deepEqual(commandNames(child(loadout, action)), ['plan', 'execute']);
+  }
+  assert.deepEqual(commandNames(child(loadout, 'identifiers')), ['list', 'plan', 'execute']);
 });
 
 test('composite reports remain isolated from atomic evidence commands', () => {

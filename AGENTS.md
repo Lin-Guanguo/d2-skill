@@ -46,7 +46,7 @@
 - Use these default capability groups:
   - `d2-login`: authentication, auth diagnostics, and skill routing.
   - `d2-info`: official information, item sources, vendor routes, vendor sales, costs, affordability, and current acquisition evidence.
-  - `d2-items`: owned items, roll and wishlist evidence, duplicate review, transfers, safe gear actions, sockets, and read-only in-game loadouts.
+  - `d2-items`: owned items, roll and wishlist evidence, duplicate review, transfers, safe gear actions, sockets, and in-game loadout inspection/management.
   - `d2-progress`: currencies, records, collectibles, craftables, metrics, milestones, and current or available activity state.
   - `d2-stats`: characters, activity history, PGCRs, historical stats, dungeon reports, clan rewards, clan aggregate stats, and leaderboards.
   - `d2-api`: read-only Bungie `/Platform/...` fallback and SDK coverage diagnostics when no domain skill exposes the needed official surface.

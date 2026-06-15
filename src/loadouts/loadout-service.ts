@@ -1,17 +1,27 @@
 import {
+  clearLoadout,
   DestinyComponentType,
   type DestinyCharacterComponent,
   type DestinyInventoryItemDefinition,
   type DestinyItemComponent,
   type DestinyLoadoutComponent,
   type DestinyProfileResponse,
+  equipLoadout,
+  snapshotLoadout,
+  updateLoadoutIdentifiers,
 } from 'bungie-api-ts/destiny2';
 import {
   type AccountSelection,
   type DestinyAccountRef,
   resolveDestinyAccount,
 } from '../account/account-service.js';
+import { createAuthenticatedBungieHttpClient } from '../bungie/http-client.js';
 import { destinyClassKey } from '../bungie/value-labels.js';
+import {
+  actionExecuteEnvelope,
+  actionPlanEnvelope,
+  formatExecutionError,
+} from '../gear/execution.js';
 import {
   loadCachedProfile,
   type ProfileCacheOptions,
@@ -23,8 +33,11 @@ import {
   loadLoadoutManifest,
 } from './loadout-manifest.js';
 import {
+  loadoutIdentifierChanges,
   normalizeCharacterSelector,
   resolveLoadoutIndex,
+  resolveLoadoutIdentifierRequest,
+  type LoadoutIdentifierRequest,
 } from './loadout-model.js';
 
 export interface LoadoutOptions extends AccountSelection, ProfileCacheOptions {
@@ -33,6 +46,16 @@ export interface LoadoutOptions extends AccountSelection, ProfileCacheOptions {
 
 export interface LoadoutInspectOptions extends LoadoutOptions {
   index: number;
+}
+
+export interface LoadoutActionOptions extends LoadoutOptions, LoadoutIdentifierRequest {
+  index: number;
+}
+
+export interface LoadoutIdentifierOptions extends LoadoutActionOptions, LoadoutIdentifierRequest {}
+
+export interface LoadoutIdentifierListOptions {
+  kind?: LoadoutIdentifierKind;
 }
 
 interface CharacterSummary {
@@ -68,6 +91,31 @@ interface LoadoutSnapshot {
   characters: CharacterSummary[];
   currentCharacter: CharacterSummary;
   itemsByInstanceId: Map<string, DestinyItemComponent>;
+}
+
+type LoadoutOperation = 'equip' | 'snapshot' | 'clear' | 'update-identifiers';
+type LoadoutIdentifierKind = 'name' | 'icon' | 'color';
+
+interface PlannedLoadoutAction {
+  type: 'equip-loadout' | 'snapshot-loadout' | 'clear-loadout' | 'update-loadout-identifiers';
+  characterId: string;
+  loadoutIndex: number;
+  body: {
+    characterId: string;
+    membershipType: DestinyAccountRef['membershipType'];
+    loadoutIndex: number;
+    nameHash?: number;
+    iconHash?: number;
+    colorHash?: number;
+  };
+  changes?: ReturnType<typeof loadoutIdentifierChanges>;
+}
+
+interface LoadoutActionPlan {
+  ok: boolean;
+  actions: PlannedLoadoutAction[];
+  actionCount: number;
+  noop: boolean;
 }
 
 const DEFAULT_LOADOUT_PROFILE_CACHE_TTL_SECONDS = 300;
@@ -177,6 +225,47 @@ function loadoutIcon(manifest: LoadoutManifest, hash: number | undefined) {
   return {
     hash,
     iconImagePath: definition.iconImagePath,
+  };
+}
+
+function identifierTableName(kind: LoadoutIdentifierKind) {
+  switch (kind) {
+    case 'name':
+      return 'DestinyLoadoutNameDefinition';
+    case 'icon':
+      return 'DestinyLoadoutIconDefinition';
+    case 'color':
+      return 'DestinyLoadoutColorDefinition';
+  }
+}
+
+function identifierDefinition(kind: LoadoutIdentifierKind, hash: number | undefined, manifest: LoadoutManifest) {
+  switch (kind) {
+    case 'name':
+      return loadoutName(manifest, hash);
+    case 'icon':
+      return loadoutIcon(manifest, hash);
+    case 'color':
+      return loadoutColor(manifest, hash);
+  }
+}
+
+function summarizeIdentifier(kind: LoadoutIdentifierKind, key: string, value: unknown) {
+  const definition = value as {
+    hash?: number;
+    index?: number;
+    name?: string;
+    iconImagePath?: string;
+    colorImagePath?: string;
+  };
+  const hash = definition.hash ?? Number(key);
+  return {
+    kind,
+    hash,
+    index: definition.index,
+    name: definition.name,
+    iconImagePath: definition.iconImagePath,
+    colorImagePath: definition.colorImagePath,
   };
 }
 
@@ -300,11 +389,12 @@ function selectedCharacters(snapshot: LoadoutSnapshot, selector = 'current') {
   return [character];
 }
 
-function source() {
+function source(executionEndpoints?: string[]) {
   return {
     endpoint: 'Destiny2.GetProfile',
     components: LOADOUT_PROFILE_COMPONENTS,
     manifestTables: LOADOUT_MANIFEST_TABLES,
+    ...(executionEndpoints ? { executionEndpoints } : undefined),
   };
 }
 
@@ -359,8 +449,259 @@ function summarizeLoadout(snapshot: LoadoutSnapshot, index: number, loadout: Des
   };
 }
 
+function summarizeLoadoutSlot(snapshot: LoadoutSnapshot, index: number, loadout: DestinyLoadoutComponent) {
+  const summarized = summarizeLoadout(snapshot, index, loadout);
+  return {
+    index: summarized.index,
+    displayIndex: summarized.displayIndex,
+    nameHash: summarized.nameHash,
+    name: summarized.name,
+    colorHash: summarized.colorHash,
+    color: summarized.color,
+    iconHash: summarized.iconHash,
+    icon: summarized.icon,
+    itemCount: summarized.itemCount,
+    empty: summarized.empty,
+  };
+}
+
 function characterLoadouts(snapshot: LoadoutSnapshot, character: CharacterSummary) {
   return snapshot.profile.characterLoadouts?.data?.[character.characterId]?.loadouts ?? [];
+}
+
+function selectedSingleCharacter(snapshot: LoadoutSnapshot, selector: string | undefined, action: string) {
+  const characters = selectedCharacters(snapshot, selector);
+  if (characters.length !== 1) {
+    throw new Error(`${action} one loadout at a time. Use --character current or a character id, not all.`);
+  }
+  return characters[0];
+}
+
+function loadoutForAction(snapshot: LoadoutSnapshot, options: LoadoutActionOptions, action: string) {
+  const character = selectedSingleCharacter(snapshot, options.character, action);
+  const loadouts = characterLoadouts(snapshot, character);
+  const index = resolveLoadoutIndex(options.index, loadouts.length);
+  const loadout = loadouts[index];
+  return {
+    character,
+    index,
+    loadout,
+    summarizedLoadout: summarizeLoadoutSlot(snapshot, index, loadout),
+  };
+}
+
+function loadoutActionEndpoint(operation: LoadoutOperation) {
+  switch (operation) {
+    case 'equip':
+      return 'Destiny2.EquipLoadout';
+    case 'snapshot':
+      return 'Destiny2.SnapshotLoadout';
+    case 'clear':
+      return 'Destiny2.ClearLoadout';
+    case 'update-identifiers':
+      return 'Destiny2.UpdateLoadoutIdentifiers';
+  }
+}
+
+function loadoutActionType(operation: LoadoutOperation) {
+  switch (operation) {
+    case 'equip':
+      return 'equip-loadout';
+    case 'snapshot':
+      return 'snapshot-loadout';
+    case 'clear':
+      return 'clear-loadout';
+    case 'update-identifiers':
+      return 'update-loadout-identifiers';
+  }
+}
+
+function loadoutActionQuery(options: LoadoutActionOptions | LoadoutIdentifierOptions, index: number) {
+  return {
+    character: normalizeCharacterSelector(options.character),
+    index,
+    ...('nameHash' in options && options.nameHash !== undefined ? { nameHash: options.nameHash } : undefined),
+    ...('iconHash' in options && options.iconHash !== undefined ? { iconHash: options.iconHash } : undefined),
+    ...('colorHash' in options && options.colorHash !== undefined ? { colorHash: options.colorHash } : undefined),
+  };
+}
+
+function actionPlan(
+  operation: LoadoutOperation,
+  snapshot: LoadoutSnapshot,
+  options: LoadoutActionOptions | LoadoutIdentifierOptions,
+  plan: LoadoutActionPlan,
+  character: CharacterSummary,
+  loadout: ReturnType<typeof summarizeLoadoutSlot> & Record<string, unknown>,
+) {
+  return {
+    ok: plan.ok,
+    ...actionPlanEnvelope(`loadout-${operation}-plan`, loadoutActionQuery(options, loadout.index), source([
+      loadoutActionEndpoint(operation),
+    ])),
+    operation,
+    account: snapshot.account,
+    profileMintedAt: snapshot.profile.responseMintedTimestamp,
+    profileCache: snapshot.profileCache,
+    character,
+    loadout,
+    plan,
+  };
+}
+
+type BuiltLoadoutActionPlan = ReturnType<typeof actionPlan>;
+
+function baseLoadoutAction(
+  operation: Exclude<LoadoutOperation, 'update-identifiers'>,
+  snapshot: LoadoutSnapshot,
+  options: LoadoutActionOptions,
+  action: string,
+) {
+  const { character, index, loadout, summarizedLoadout } = loadoutForAction(snapshot, options, action);
+  const identifiers = operation === 'snapshot'
+    ? resolveLoadoutIdentifierRequest(loadout, options)
+    : undefined;
+  const actions: PlannedLoadoutAction[] =
+    operation === 'clear' && summarizedLoadout.empty
+      ? []
+      : [{
+        type: loadoutActionType(operation),
+        characterId: character.characterId,
+        loadoutIndex: index,
+        body: {
+          characterId: character.characterId,
+          membershipType: snapshot.account.membershipType,
+          loadoutIndex: index,
+          ...(identifiers ?? {}),
+        },
+      }];
+
+  return actionPlan(operation, snapshot, options, {
+    ok: true,
+    actions,
+    actionCount: actions.length,
+    noop: actions.length === 0,
+  }, character, summarizedLoadout);
+}
+
+function updateIdentifierAction(snapshot: LoadoutSnapshot, options: LoadoutIdentifierOptions) {
+  const { character, index, loadout, summarizedLoadout } = loadoutForAction(
+    snapshot,
+    options,
+    'Update identifiers for',
+  );
+  const changes = loadoutIdentifierChanges(loadout, options);
+  const identifiers = resolveLoadoutIdentifierRequest(loadout, options);
+  const actions: PlannedLoadoutAction[] = changes.length
+    ? [{
+      type: 'update-loadout-identifiers',
+      characterId: character.characterId,
+      loadoutIndex: index,
+      body: {
+        characterId: character.characterId,
+        membershipType: snapshot.account.membershipType,
+        loadoutIndex: index,
+        ...identifiers,
+      },
+      changes,
+    }]
+    : [];
+
+  return actionPlan('update-identifiers', snapshot, options, {
+    ok: true,
+    actions,
+    actionCount: actions.length,
+    noop: actions.length === 0,
+  }, character, {
+    ...summarizedLoadout,
+    requestedIdentifiers: {
+      nameHash: identifiers.nameHash,
+      name: identifierDefinition('name', identifiers.nameHash, snapshot.manifest),
+      iconHash: identifiers.iconHash,
+      icon: identifierDefinition('icon', identifiers.iconHash, snapshot.manifest),
+      colorHash: identifiers.colorHash,
+      color: identifierDefinition('color', identifiers.colorHash, snapshot.manifest),
+    },
+  });
+}
+
+function loadoutExecuteResult(
+  plan: BuiltLoadoutActionPlan,
+  result: {
+    ok: boolean;
+    actionCount: number;
+    noop?: boolean;
+    response?: number;
+    error?: unknown;
+  },
+) {
+  return {
+    ok: result.ok,
+    ...actionExecuteEnvelope(plan.kind, plan.query, plan.source),
+    executed: true,
+    operation: plan.operation,
+    account: plan.account,
+    profileMintedAt: plan.profileMintedAt,
+    profileCache: plan.profileCache,
+    character: plan.character,
+    loadout: plan.loadout,
+    results: [result],
+  };
+}
+
+async function callLoadoutAction(action: PlannedLoadoutAction) {
+  const http = await createAuthenticatedBungieHttpClient();
+  switch (action.type) {
+    case 'equip-loadout':
+      return equipLoadout(http, action.body);
+    case 'snapshot-loadout':
+      return snapshotLoadout(http, action.body);
+    case 'clear-loadout':
+      return clearLoadout(http, action.body);
+    case 'update-loadout-identifiers':
+      return updateLoadoutIdentifiers(http, action.body);
+  }
+}
+
+async function buildLoadoutActionPlan(
+  operation: Exclude<LoadoutOperation, 'update-identifiers'>,
+  options: LoadoutActionOptions,
+): Promise<BuiltLoadoutActionPlan> {
+  const snapshot = await loadLoadoutSnapshot(options);
+  switch (operation) {
+    case 'equip':
+      return baseLoadoutAction(operation, snapshot, options, 'Equip');
+    case 'snapshot':
+      return baseLoadoutAction(operation, snapshot, options, 'Snapshot');
+    case 'clear':
+      return baseLoadoutAction(operation, snapshot, options, 'Clear');
+  }
+}
+
+async function executeLoadoutPlan(plan: BuiltLoadoutActionPlan) {
+  const action = plan.plan.actions[0];
+  if (!action) {
+    return loadoutExecuteResult(plan, {
+      ok: true,
+      actionCount: 0,
+      noop: true,
+    });
+  }
+
+  try {
+    const response = await callLoadoutAction(action);
+    return loadoutExecuteResult(plan, {
+      ok: true,
+      actionCount: 1,
+      response: response.Response,
+    });
+  } catch (error) {
+    return loadoutExecuteResult(plan, {
+      ok: false,
+      actionCount: 1,
+      error: formatExecutionError(error),
+    });
+  }
 }
 
 export async function listLoadouts(options: LoadoutOptions = {}) {
@@ -377,19 +718,7 @@ export async function listLoadouts(options: LoadoutOptions = {}) {
         character,
         count: loadouts.length,
         loadouts: loadouts.map((loadout, index) => {
-          const summarized = summarizeLoadout(snapshot, index, loadout);
-          return {
-            index: summarized.index,
-            displayIndex: summarized.displayIndex,
-            nameHash: summarized.nameHash,
-            name: summarized.name,
-            colorHash: summarized.colorHash,
-            color: summarized.color,
-            iconHash: summarized.iconHash,
-            icon: summarized.icon,
-            itemCount: summarized.itemCount,
-            empty: summarized.empty,
-          };
+          return summarizeLoadoutSlot(snapshot, index, loadout);
         }),
       };
     }),
@@ -399,12 +728,7 @@ export async function listLoadouts(options: LoadoutOptions = {}) {
 
 export async function inspectLoadout(options: LoadoutInspectOptions) {
   const snapshot = await loadLoadoutSnapshot(options);
-  const characters = selectedCharacters(snapshot, options.character);
-  if (characters.length !== 1) {
-    throw new Error('Inspect one loadout at a time. Use --character current or a character id, not all.');
-  }
-
-  const character = characters[0];
+  const character = selectedSingleCharacter(snapshot, options.character, 'Inspect');
   const loadouts = characterLoadouts(snapshot, character);
   const index = resolveLoadoutIndex(options.index, loadouts.length);
 
@@ -417,4 +741,71 @@ export async function inspectLoadout(options: LoadoutInspectOptions) {
     loadout: summarizeLoadout(snapshot, index, loadouts[index]),
     source: source(),
   };
+}
+
+export async function listLoadoutIdentifiers(options: LoadoutIdentifierListOptions = {}) {
+  const manifest = await loadLoadoutManifest();
+  const kinds: LoadoutIdentifierKind[] = options.kind ? [options.kind] : ['name', 'icon', 'color'];
+  const groups = kinds.map((kind) => {
+    const identifiers = Object.entries(table(manifest, identifierTableName(kind)))
+      .map(([key, value]) => summarizeIdentifier(kind, key, value))
+      .sort((a, b) => (a.index ?? a.hash) - (b.index ?? b.hash));
+    return {
+      kind,
+      count: identifiers.length,
+      identifiers,
+    };
+  });
+
+  return {
+    ok: true,
+    kind: 'loadout-identifiers-list',
+    version: 1,
+    checkedAt: new Date().toISOString(),
+    query: {
+      kind: options.kind,
+    },
+    groups,
+    totalCount: groups.reduce((sum, group) => sum + group.count, 0),
+    source: {
+      manifestTables: [
+        'DestinyLoadoutNameDefinition',
+        'DestinyLoadoutIconDefinition',
+        'DestinyLoadoutColorDefinition',
+      ],
+    },
+  };
+}
+
+export function buildLoadoutEquipPlan(options: LoadoutActionOptions) {
+  return buildLoadoutActionPlan('equip', options);
+}
+
+export async function executeLoadoutEquip(options: LoadoutActionOptions) {
+  return executeLoadoutPlan(await buildLoadoutEquipPlan({ ...options, refreshProfile: true }));
+}
+
+export function buildLoadoutSnapshotPlan(options: LoadoutActionOptions) {
+  return buildLoadoutActionPlan('snapshot', options);
+}
+
+export async function executeLoadoutSnapshot(options: LoadoutActionOptions) {
+  return executeLoadoutPlan(await buildLoadoutSnapshotPlan({ ...options, refreshProfile: true }));
+}
+
+export function buildLoadoutClearPlan(options: LoadoutActionOptions) {
+  return buildLoadoutActionPlan('clear', options);
+}
+
+export async function executeLoadoutClear(options: LoadoutActionOptions) {
+  return executeLoadoutPlan(await buildLoadoutClearPlan({ ...options, refreshProfile: true }));
+}
+
+export async function buildLoadoutIdentifiersPlan(options: LoadoutIdentifierOptions) {
+  const snapshot = await loadLoadoutSnapshot(options);
+  return updateIdentifierAction(snapshot, options);
+}
+
+export async function executeLoadoutIdentifiers(options: LoadoutIdentifierOptions) {
+  return executeLoadoutPlan(await buildLoadoutIdentifiersPlan({ ...options, refreshProfile: true }));
 }

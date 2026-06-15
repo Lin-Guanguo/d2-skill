@@ -12,7 +12,7 @@ Use this skill as the narrow fallback for official Bungie API data that is not y
 Prefer the domain skills first:
 
 - `d2-info`: official manifest/entity lookup, item sources, vendor routes, vendor sales, costs, and affordability.
-- `d2-items`: owned inventory, rolls, wishlist evidence, transfers, sockets, item actions, and saved loadouts.
+- `d2-items`: owned inventory, rolls, wishlist evidence, transfers, sockets, item actions, and in-game loadout management.
 - `d2-progress`: records, collectibles, craftables, currencies, metrics, milestones, and current/available activity state.
 - `d2-stats`: activity history, PGCRs, historical stats, character ids, dungeon reports, and clan statistics.
 - `d2-login`: OAuth status, login, refresh, logout, and auth recovery.

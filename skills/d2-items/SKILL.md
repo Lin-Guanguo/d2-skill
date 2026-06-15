@@ -1,6 +1,6 @@
 ---
 name: d2-items
-description: Query Destiny 2 owned item facts and run safe atomic item actions through the repo-local CLI. Use when a task needs owned item search, vault or character inventory lookup, duplicate grouping, wishlist evidence, item instance inspection, perk/stat or roll evidence, duplicate cleanup review, transfer planning, item movement, equip, lock/unlock, postmaster pull, socket inspection, free reusable plug insertion, loadout slot lists, or saved loadout contents.
+description: Query Destiny 2 owned item facts and run safe atomic item actions through the repo-local CLI. Use when a task needs owned item search, vault or character inventory lookup, duplicate grouping, wishlist evidence, item instance inspection, perk/stat or roll evidence, duplicate cleanup review, transfer planning, item movement, equip, lock/unlock, postmaster pull, socket inspection, free reusable plug insertion, loadout slot lists, saved loadout contents, or in-game loadout management.
 ---
 
 # D2 Items
@@ -278,7 +278,7 @@ Important socket fields:
 
 ## In-Game Loadouts
 
-Use loadout commands for read-only inspection of Destiny 2 in-game loadout slots. This is not DIM loadout import/export and does not execute gear changes.
+Use loadout commands for Destiny 2 in-game loadout slots. This is not DIM loadout import/export and does not apply arbitrary AI-generated builds directly. For AI-assisted setup, compose atomic `gear`, `socket`, and `loadout snapshot` commands after deterministic checks.
 
 ```bash
 test -f dist/cli.js || pnpm build
@@ -286,16 +286,38 @@ node dist/cli.js loadout list --character current
 node dist/cli.js loadout list --character all
 node dist/cli.js loadout inspect --character current --index 0
 node dist/cli.js loadout inspect --character '<characterId>' --index 3
+node dist/cli.js loadout identifiers list --kind name
+node dist/cli.js loadout equip plan --character current --index 0
+node dist/cli.js loadout snapshot plan --character current --index 0
+node dist/cli.js loadout clear plan --character current --index 0
+node dist/cli.js loadout identifiers plan --character current --index 0 --name-hash '<hash>'
 ```
 
 Use `--refresh-profile` when loadouts were just changed in game.
+Use `execute --dry-run` as a preview when the user asks to execute but confirmation would materially reduce mistakes.
+`loadout snapshot` preserves the slot's current name/icon/color identifiers by default; optional identifier flags override them. `loadout identifiers` also fills omitted identifier fields from the current slot before calling Bungie.
+Execute only after the user asks for execution:
+
+```bash
+node dist/cli.js loadout equip execute --character current --index 0
+node dist/cli.js loadout snapshot execute --character current --index 0
+node dist/cli.js loadout clear execute --character current --index 0
+node dist/cli.js loadout identifiers execute --character current --index 0 --name-hash '<hash>' --icon-hash '<hash>' --color-hash '<hash>'
+```
 
 Important loadout fields:
 
 - `loadout list`: one entry per selected character with slot metadata only.
 - `loadout inspect`: `loadout.items[]` with `itemInstanceId`, `itemHash`, localized item display, `plugItemHashes`, and localized plug display.
+- `loadout identifiers list`: valid manifest hashes for names, icons, and colors; pass these hashes to `loadout identifiers plan/execute`.
+- `loadout equip`: equips one saved in-game loadout slot through Bungie `EquipLoadout`.
+- `loadout snapshot`: saves the current in-game equipped state into one loadout slot through Bungie `SnapshotLoadout`.
+- `loadout clear`: clears one saved in-game loadout slot through Bungie `ClearLoadout`; empty slots are no-ops.
+- `loadout identifiers`: updates name/icon/color hashes through Bungie `UpdateLoadoutIdentifiers`; unchanged requested hashes are no-ops.
 - `index`: zero-based CLI input.
 - `displayIndex`: one-based display number.
 - `nameHash`, `iconHash`, and `colorHash`: stable identifiers.
 - `name`, `icon`, and `color`: manifest display data.
 - `empty` and `itemCount`: whether a loadout slot has saved items.
+- `plan.actions[]`: deterministic action body and requested identifier changes for write commands.
+- `results[]`: Bungie execution result or formatted execution error.
