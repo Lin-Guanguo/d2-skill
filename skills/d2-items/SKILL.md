@@ -1,6 +1,6 @@
 ---
 name: d2-items
-description: Manage Destiny 2 inventory items and saved in-game loadouts through the repo-local CLI. Use when a task needs owned item search, vault or character inventory lookup, duplicate grouping, wishlist evidence, item instance inspection, perk/stat or roll analysis, cleanup candidate selection, transfer planning, item movement, equip, lock/unlock, postmaster pull, socket inspection, free reusable plug insertion, loadout slot lists, or saved loadout contents.
+description: Manage Destiny 2 inventory items and saved in-game loadouts through the repo-local CLI. Use when a task needs owned item search, vault or character inventory lookup, duplicate grouping, wishlist evidence, item instance inspection, perk/stat or roll analysis, duplicate cleanup review, transfer planning, item movement, equip, lock/unlock, postmaster pull, socket inspection, free reusable plug insertion, loadout slot lists, or saved loadout contents.
 ---
 
 # D2 Items
@@ -40,7 +40,7 @@ Use this skill for Destiny 2 item management. The CLI owns Bungie API calls, OAu
 - `insertedPlugs` are the currently inserted plugs for an owned item.
 - `availablePlugs` are reusable plugs Bungie reports for that owned item.
 - DIM wishlist entries usually match `itemHash + perkHashes`; they do not identify a specific owned copy.
-- Cleanup workflow: use `itemHash` to find duplicate copies, compare each copy by `itemId`, then move cleanup candidates by `itemId`.
+- Cleanup workflow: use `itemHash` to find duplicate copies, compare each copy by `itemId`, and let AI select any items to move for in-game dismantling.
 - Armor 3.0 uses new stat meanings while Bungie/API-facing stat hashes can still appear as legacy Armor 2.0 names in CLI output. Interpret armor stats with this compatibility mapping: Mobility -> Weapons, Resilience -> Health, Recovery -> Class, Discipline -> Grenade, Intellect -> Super, Strength -> Melee. Treat old localized names such as `韧性` as raw display labels, not current build-analysis terms.
 
 ## Composition Patterns
@@ -52,7 +52,7 @@ For duplicate cleanup:
 3. Run `inventory wishlist --type weapon --owner vault --all --min-entry-perks 2` when broad wishlist evidence is needed.
 4. For deeper source context on a candidate group, run `wishlist inspect --item-hash '<itemHash>' --limit 20`.
 5. Let AI compare returned item rolls, wishlist evidence, archetype/use case, ownership, and user preference.
-6. Move only selected cleanup candidates by `itemId` with `gear transfer plan` or `gear transfer execute --target current`; the user dismantles in game.
+6. Move only user-approved item instances by `itemId` with `gear transfer plan` or `gear transfer execute --target current`; the user dismantles in game.
 
 For targeted roll review:
 
@@ -100,7 +100,7 @@ Important search fields:
 
 ## Duplicates
 
-Use duplicate grouping when the user wants cleanup candidates, roll comparison batches, or repeated copies of the same weapon.
+Use duplicate grouping when the user wants duplicate cleanup review, roll comparison batches, or repeated copies of the same weapon.
 
 ```bash
 test -f dist/cli.js || pnpm build
@@ -171,7 +171,7 @@ For non-DIM documents, read the document as AI evidence or convert a small tempo
 
 ## Cleanup
 
-For cleanup-style requests, use the pattern of identifying cleanup candidates and moving them to the user's selected character inventory, usually `current`, so the user can dismantle them in game. Do not claim to dismantle or delete items through the CLI.
+For cleanup-style requests, use `inventory duplicates`, `inventory wishlist`, and `item inspect` as evidence. Let AI compare the returned facts and ask for or infer user approval before moving selected item instances to the user's selected character inventory, usually `current`, so the user can dismantle them in game. Do not claim to dismantle or delete items through the CLI.
 
 ## Transfer
 
