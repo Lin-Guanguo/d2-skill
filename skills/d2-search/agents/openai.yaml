@@ -1,4 +1,0 @@
-interface:
-  display_name: "D2 Search"
-  short_description: "Search across Destiny 2 data surfaces."
-  default_prompt: "Use $d2-search to search one Destiny 2 term across owned items, manifest data, vendors, records, collectibles, and craftables."

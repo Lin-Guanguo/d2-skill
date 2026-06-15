@@ -1,4 +1,0 @@
-interface:
-  display_name: "D2 Loadouts"
-  short_description: "Inspect Destiny 2 in-game loadouts."
-  default_prompt: "Use $d2-loadouts to list and inspect Destiny 2 in-game loadout slots through the repo-local CLI."

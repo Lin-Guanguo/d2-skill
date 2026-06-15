@@ -1,4 +1,4 @@
 interface:
   display_name: "D2 Stats"
   short_description: "Query Destiny 2 stats and activity data."
-  default_prompt: "Use $d2-stats to query Destiny 2 characters, activity history, PGCRs, historical stats, weapon history, or analyzed activity reports through the repo-local CLI."
+  default_prompt: "Use $d2-stats to query Destiny 2 characters, activity history, PGCRs, historical stats, weapon history, clan rewards, or leaderboards through the repo-local CLI."

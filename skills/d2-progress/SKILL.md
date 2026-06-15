@@ -46,4 +46,4 @@ Use `--limit <count>` for exploration and `--all` only when a complete list is n
 - Activities report current and available character activity state, not historical completions.
 - `audit.path` is the canonical saved JSON output for follow-up reasoning.
 
-Do not use this skill for owned item roll inspection or transfer; use `d2-items`. Do not use it for public item source or live vendor route questions; use `d2-info` or `d2-vendors`.
+Do not use this skill for owned item roll inspection or transfer; use `d2-items`. Do not use it for public item source or live vendor route questions; use `d2-info`.

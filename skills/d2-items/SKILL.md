@@ -1,6 +1,6 @@
 ---
 name: d2-items
-description: Manage Destiny 2 inventory items through the repo-local CLI. Use when a task needs owned item search, vault or character inventory lookup, duplicate grouping, wishlist evidence, item instance inspection, perk/stat or roll analysis, cleanup candidate selection, transfer planning, item movement, equip, lock/unlock, postmaster pull, socket inspection, or free reusable plug insertion.
+description: Manage Destiny 2 inventory items and saved in-game loadouts through the repo-local CLI. Use when a task needs owned item search, vault or character inventory lookup, duplicate grouping, wishlist evidence, item instance inspection, perk/stat or roll analysis, cleanup candidate selection, transfer planning, item movement, equip, lock/unlock, postmaster pull, socket inspection, free reusable plug insertion, loadout slot lists, or saved loadout contents.
 ---
 
 # D2 Items
@@ -79,8 +79,7 @@ node dist/cli.js inventory search --item-ids '<itemId1>,<itemId2>' --details per
 node dist/cli.js inventory wishlist --owner vault --type weapon --all --min-entry-perks 2
 ```
 
-Prefer `--limit` for exploratory work and `--all` only when the user asks for a full batch.
-Use `d2-search` instead when the user wants one broad term searched across owned items, official manifest items, vendors, records, collectibles, and craftables.
+Prefer `--limit` for exploratory work and `--all` only when the user asks for a full batch. Use `d2-info` when the user wants broad discovery across item sources, vendors, manifest matches, or progress surfaces instead of owned item management.
 
 Important search fields:
 
@@ -269,3 +268,27 @@ Important socket fields:
 - `sockets[].plugs[].canInsert`: true when Bungie currently allows the plug.
 - `socket-insert-free-plan.plan`: validates item ownership, socket index, requested `plugHash`, and no-op state before execution.
 - `socket-insert-free-execute.result`: per-item Bungie execution result when not using `--dry-run`.
+
+## In-Game Loadouts
+
+Use loadout commands for read-only inspection of Destiny 2 in-game loadout slots. This is not DIM loadout import/export and does not execute gear changes.
+
+```bash
+test -f dist/cli.js || pnpm build
+node dist/cli.js loadout list --character current
+node dist/cli.js loadout list --character all
+node dist/cli.js loadout inspect --character current --index 0
+node dist/cli.js loadout inspect --character '<characterId>' --index 3
+```
+
+Use `--refresh-profile` when loadouts were just changed in game.
+
+Important loadout fields:
+
+- `loadout list`: one entry per selected character with slot metadata only.
+- `loadout inspect`: `loadout.items[]` with `itemInstanceId`, `itemHash`, localized item display, `plugItemHashes`, and localized plug display.
+- `index`: zero-based CLI input.
+- `displayIndex`: one-based display number.
+- `nameHash`, `iconHash`, and `colorHash`: stable identifiers.
+- `name`, `icon`, and `color`: manifest display data.
+- `empty` and `itemCount`: whether a loadout slot has saved items.

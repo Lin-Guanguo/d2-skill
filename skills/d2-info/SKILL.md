@@ -1,13 +1,13 @@
 ---
 name: d2-info
-description: Resolve official Destiny 2 information and item acquisition routes through the repo-local CLI. Use when a task needs Bungie manifest/entity lookup, public milestones, public vendors, item source families, vendor/focusing route evidence, Monument of Triumph event engrams, preview-pool evidence, or answers like where an item can be obtained now.
+description: Resolve official Destiny 2 information, item acquisition routes, and live vendor availability through the repo-local CLI. Use when a task needs Bungie manifest/entity lookup, public milestones, public vendors, item source families, vendor/focusing route evidence, Monument of Triumph event engrams, preview-pool evidence, live vendor sales, costs, purchasable/affordable state, or broad discovery for where an item can be obtained now.
 ---
 
 # D2 Info
 
 ## Overview
 
-Use this skill for official Destiny 2 information lookup and acquisition-route reasoning, not owned-item management or vendor shopping. The CLI owns Bungie API calls, OAuth, manifest loading, vendor lookup, and JSON output.
+Use this skill for official Destiny 2 information lookup, acquisition-route reasoning, and live vendor availability. The CLI owns Bungie API calls, OAuth, manifest loading, vendor lookup, currency lookup, and JSON output.
 
 Call `d2-login` first when auth is missing, expired, or rejected.
 
@@ -28,7 +28,7 @@ node dist/cli.js info public-vendors
 - `entity-search`: search official manifest data by definition type and term. It attempts Bungie's entity search first and falls back to the local manifest cache when the official search endpoint cannot satisfy the query.
 - `entity`: fetch one official entity definition by type and hash. It prefers the localized local manifest cache for supported tables and uses Bungie's entity endpoint as fallback.
 - `public-milestones`: list current public milestone hashes, localized display data, dates, activity counts, quest counts, and related vendors from Bungie's public milestone endpoint.
-- `public-vendors`: list character-agnostic public vendor sales. This is smaller than character-scoped `GetVendors`; use item source lookup for acquisition routes or `d2-vendors` for current character-specific sale/cost/affordability checks.
+- `public-vendors`: list character-agnostic public vendor sales. This is smaller than character-scoped `GetVendors`; use `vendor` commands for current character-specific sale, cost, and affordability checks.
 
 ## Item Source
 
@@ -42,6 +42,34 @@ node dist/cli.js info item-source --name '<item name>' --no-vendors
 ```
 
 Use `--item-hash` when the user cares about an exact reprised or tiered version. Use `--no-vendors` for manifest-only source lookup.
+
+## Live Vendor Sales
+
+Use `vendor` commands when the user asks whether a merchant currently sells an item, which currency it costs, whether it is purchasable, or whether the current character can afford it.
+
+```bash
+test -f dist/cli.js || pnpm build
+node dist/cli.js vendor list --character current
+node dist/cli.js vendor inspect --vendor-hash '<vendorHash>' --character current
+node dist/cli.js vendor sales --name '<item text>' --character current
+node dist/cli.js vendor sales --item-hash '<itemHash>' --character current
+node dist/cli.js vendor sales --cost-name '<currency text>' --character current
+node dist/cli.js vendor sales --vendor-hash '<vendorHash>' --purchasable --affordable
+```
+
+Use `--refresh-profile` when currency balances, rank state, or vendor availability may have just changed.
+
+Important vendor fields:
+
+- `vendor list`: vendor hashes, display names, enabled/canPurchase state, refresh dates, and sale counts.
+- `vendor inspect`: one vendor, display categories, and all summarized sales for that vendor.
+- `vendor sales`: filtered sales with `totalMatched`, `count`, `truncated`, and query fields.
+- `saleStatusFlags` and `failureReasons`: Bungie's sale status explanation.
+- `affordable`: compares costs against current `CurrencyLookups`.
+- `statusPurchasable`: checks Bungie's sale status.
+- `canPurchaseInGame`: requires both purchasable status and affordability.
+- `canPurchaseViaApi`: also requires `apiPurchasable`; do not assume every in-game purchase is API-purchasable.
+- `costs[]`: required quantity, available quantity, and currency/material display evidence.
 
 ## Interpretation
 
@@ -84,9 +112,9 @@ Current route patterns:
 
 ## Example Pattern
 
-For an event weapon such as Festival Flight / `庆典飞行`:
+For an event weapon such as Festival Flight:
 
-1. Read `sourceFamilies[]` to identify `Source: Solstice` / `来源：至日`.
+1. Read `sourceFamilies[]` to identify its source family.
 2. Check `liveVendors.directRoutes[]` for direct sale or focusing.
 3. Check `liveVendors.indirectRoutes[]` for Monument of Triumph engrams.
 4. If the route is indirect, report the vendor, sold engram, cost, and preview hit hashes.
@@ -99,4 +127,4 @@ Write a temporary Node script only when the current CLI output is missing an API
 
 When a temporary script reveals a repeatable workflow, promote it into a CLI command before updating this skill. Keep Bungie API calls, OAuth handling, persistence, and business logic in the CLI, not in skill instructions.
 
-Use `d2-vendors` when the question is specifically about current character vendor sales, costs, purchasable state, or affordability. Use `d2-search` when the user wants one broad search across owned items, manifest items, vendors, and progress. Do not use `d2-items` for this unless the user asks about owned copies, rolls, transfer, duplicate cleanup, or wishlist evidence. Do not use `d2-stats` unless the user asks about characters, activities, PGCRs, or player statistics.
+Do not use `d2-items` for this unless the user asks about owned copies, rolls, transfer, duplicate cleanup, or wishlist evidence. Do not use `d2-stats` unless the user asks about characters, activities, PGCRs, player statistics, or clan leaderboards.
