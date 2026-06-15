@@ -14,7 +14,12 @@ import type { InventoryItemRecord, PublicItem } from '../items/item-model.js';
 import type { DisplayManifest } from '../manifest/manifest-service.js';
 import type { ProfileCacheOptions } from '../profile/profile-cache.js';
 import { loadInventorySnapshot } from '../profile/profile-service.js';
-import { formatExecutionError, waitBetweenGearActions } from '../gear/execution.js';
+import {
+  actionExecuteEnvelope,
+  actionPlanEnvelope,
+  formatExecutionError,
+  waitBetweenGearActions,
+} from '../gear/execution.js';
 
 const SOCKET_DETAIL_COMPONENTS = [
   DestinyComponentType.ItemSockets,
@@ -348,24 +353,20 @@ export async function buildInsertFreePlan(options: SocketInsertFreeOptions) {
 
   return {
     ok: plan.ok,
-    kind: 'socket-insert-free-plan',
-    version: 1,
-    dryRun: true,
-    account: context.snapshot.account,
-    profileMintedAt: context.view.profileMintedAt,
-    profileCache: context.snapshot.profileCache,
-    query: {
+    ...actionPlanEnvelope('socket-insert-free-plan', {
       itemId: options.itemId,
       socketIndex: options.socketIndex,
       plugHash: options.plugHash,
       character: options.character,
-    },
-    plan,
-    source: {
+    }, {
       endpoint: 'Destiny2.InsertSocketPlugFree',
       profileEndpoint: 'Destiny2.GetProfile',
       detailComponents: SOCKET_DETAIL_COMPONENTS,
-    },
+    }),
+    account: context.snapshot.account,
+    profileMintedAt: context.view.profileMintedAt,
+    profileCache: context.snapshot.profileCache,
+    plan,
   };
 }
 
@@ -382,8 +383,7 @@ export async function executeInsertFreePlan(options: SocketInsertFreeOptions) {
   if (!result.plan.ok) {
     return {
       ...result,
-      kind: 'socket-insert-free-execute',
-      dryRun: false,
+      ...actionExecuteEnvelope(result.kind, result.query, result.source),
       executed: false,
       error: 'Socket insert plan is invalid. Nothing was executed.',
     };
@@ -391,8 +391,7 @@ export async function executeInsertFreePlan(options: SocketInsertFreeOptions) {
   if (!result.plan.actions.length) {
     return {
       ...result,
-      kind: 'socket-insert-free-execute',
-      dryRun: false,
+      ...actionExecuteEnvelope(result.kind, result.query, result.source),
       executed: true,
       result: {
         ok: true,
@@ -420,8 +419,7 @@ export async function executeInsertFreePlan(options: SocketInsertFreeOptions) {
     return {
       ...result,
       ok: true,
-      kind: 'socket-insert-free-execute',
-      dryRun: false,
+      ...actionExecuteEnvelope(result.kind, result.query, result.source),
       executed: true,
       result: {
         ok: true,
@@ -434,8 +432,7 @@ export async function executeInsertFreePlan(options: SocketInsertFreeOptions) {
     return {
       ...result,
       ok: false,
-      kind: 'socket-insert-free-execute',
-      dryRun: false,
+      ...actionExecuteEnvelope(result.kind, result.query, result.source),
       executed: true,
       result: {
         ok: false,

@@ -12,7 +12,17 @@ import { itemActionCharacter, type CharacterTarget } from '../items/item-action-
 import type { InventoryItemRecord, PublicItem } from '../items/item-model.js';
 import type { ProfileCacheOptions } from '../profile/profile-cache.js';
 import { loadInventorySnapshot } from '../profile/profile-service.js';
-import { formatExecutionError, waitBetweenGearActions } from './execution.js';
+import {
+  actionExecuteEnvelope,
+  actionPlanEnvelope,
+  type ActionExecutionResult,
+  formatExecutionError,
+  invalidPlanExecutionResponse,
+  noopActionResults,
+  queryWithContinueOnError,
+  skippedInvalidActionResults,
+  waitBetweenGearActions,
+} from './execution.js';
 
 type GearOperation = 'equip' | 'lock' | 'unlock' | 'postmaster-pull';
 
@@ -62,12 +72,6 @@ export interface ItemGearPlan {
   actions: PlannedGearAction[];
 }
 
-type ExecutionResult = {
-  ok: boolean;
-  itemId: string;
-  [key: string]: unknown;
-};
-
 function planError(itemId: string, code: string, message: string, item?: PublicItem): ItemGearPlan {
   return {
     ok: false,
@@ -92,6 +96,18 @@ function planOk(itemId: string, item: PublicItem, actions: PlannedGearAction[]):
 
 function findRecord(records: InventoryItemRecord[], itemId: string) {
   return records.find((record) => record.item.itemId === itemId);
+}
+
+function gearExecutionEndpoints(operation: GearOperation) {
+  switch (operation) {
+    case 'equip':
+      return ['Destiny2.EquipItem', 'Destiny2.EquipItems'];
+    case 'lock':
+    case 'unlock':
+      return ['Destiny2.SetItemLockState'];
+    case 'postmaster-pull':
+      return ['Destiny2.PullFromPostmaster'];
+  }
 }
 
 function requireInstancedItem(record: InventoryItemRecord | undefined, itemId: string) {
@@ -242,9 +258,15 @@ async function buildPlan(
 
   return {
     ok: plans.every((plan) => plan.ok),
-    kind: `gear-${operation}-plan`,
-    version: 1,
-    dryRun: true,
+    ...actionPlanEnvelope(`gear-${operation}-plan`, {
+      itemIds: options.itemIds,
+      character: options.character,
+      amount: options.amount,
+    }, {
+      endpoint: 'Destiny2.GetProfile',
+      components: snapshot.profileCache.components,
+      executionEndpoints: gearExecutionEndpoints(operation),
+    }),
     operation,
     account: snapshot.account,
     profileMintedAt: view.profileMintedAt,
@@ -275,60 +297,18 @@ export function buildPostmasterPullPlan(options: GearActionOptions) {
   );
 }
 
-function invalidPlanResponse(
-  plan: Awaited<ReturnType<typeof buildPlan>>,
-  continueOnError: boolean | undefined,
-) {
-  const invalidPlans = plan.plans.filter((itemPlan) => !itemPlan.ok);
-  if (!invalidPlans.length || continueOnError) {
-    return undefined;
-  }
-
-  return {
-    ...plan,
-    kind: plan.kind.replace('-plan', '-execute'),
-    dryRun: false,
-    ok: false,
-    executed: false,
-    error: 'Gear action plan contains invalid items. Nothing was executed.',
-  };
-}
-
-function skippedInvalidResults(plan: Awaited<ReturnType<typeof buildPlan>>): ExecutionResult[] {
-  return plan.plans.flatMap((itemPlan) =>
-    itemPlan.ok
-      ? []
-      : [{
-        ok: false,
-        itemId: itemPlan.itemId,
-        skipped: true,
-        error: itemPlan.error,
-      }],
-  );
-}
-
-function noopResults(plan: Awaited<ReturnType<typeof buildPlan>>): ExecutionResult[] {
-  return plan.plans.flatMap((itemPlan) =>
-    itemPlan.ok && itemPlan.actions.length === 0
-      ? [{
-        ok: true,
-        itemId: itemPlan.itemId,
-        actionCount: 0,
-        noop: true,
-      }]
-      : [],
-  );
-}
-
 function baseExecuteResult(
   plan: Awaited<ReturnType<typeof buildPlan>>,
-  results: ExecutionResult[],
+  results: ActionExecutionResult[],
+  continueOnError: boolean | undefined,
 ) {
   return {
     ok: results.every((result) => result.ok),
-    kind: plan.kind.replace('-plan', '-execute'),
-    version: plan.version,
-    dryRun: false,
+    ...actionExecuteEnvelope(
+      plan.kind,
+      queryWithContinueOnError(plan.query, continueOnError),
+      plan.source,
+    ),
     executed: true,
     operation: plan.operation,
     account: plan.account,
@@ -350,14 +330,17 @@ function groupEquipActions(actions: EquipAction[]) {
 
 export async function executeEquipPlan(options: ExecuteGearActionOptions) {
   const plan = await buildEquipPlan(options);
-  const invalidResponse = invalidPlanResponse(plan, options.continueOnError);
+  const invalidResponse = invalidPlanExecutionResponse(plan, {
+    continueOnError: options.continueOnError,
+    error: 'Gear action plan contains invalid items. Nothing was executed.',
+  });
   if (invalidResponse) {
     return invalidResponse;
   }
 
-  const results: ExecutionResult[] = [
-    ...skippedInvalidResults(plan),
-    ...noopResults(plan),
+  const results: ActionExecutionResult[] = [
+    ...skippedInvalidActionResults(plan.plans),
+    ...noopActionResults(plan.plans),
   ];
   const http = await createAuthenticatedBungieHttpClient();
   const actions = plan.plans.flatMap((itemPlan) =>
@@ -419,7 +402,7 @@ export async function executeEquipPlan(options: ExecuteGearActionOptions) {
     }
   }
 
-  return baseExecuteResult(plan, results);
+  return baseExecuteResult(plan, results, options.continueOnError);
 }
 
 export async function executeLockStatePlan(
@@ -427,14 +410,17 @@ export async function executeLockStatePlan(
   lockState: boolean,
 ) {
   const plan = await buildLockStatePlan(options, lockState);
-  const invalidResponse = invalidPlanResponse(plan, options.continueOnError);
+  const invalidResponse = invalidPlanExecutionResponse(plan, {
+    continueOnError: options.continueOnError,
+    error: 'Gear action plan contains invalid items. Nothing was executed.',
+  });
   if (invalidResponse) {
     return invalidResponse;
   }
 
-  const results: ExecutionResult[] = [
-    ...skippedInvalidResults(plan),
-    ...noopResults(plan),
+  const results: ActionExecutionResult[] = [
+    ...skippedInvalidActionResults(plan.plans),
+    ...noopActionResults(plan.plans),
   ];
   const http = await createAuthenticatedBungieHttpClient();
   const actions = plan.plans.flatMap((itemPlan) =>
@@ -469,19 +455,22 @@ export async function executeLockStatePlan(
     }
   }
 
-  return baseExecuteResult(plan, results);
+  return baseExecuteResult(plan, results, options.continueOnError);
 }
 
 export async function executePostmasterPullPlan(options: ExecuteGearActionOptions) {
   const plan = await buildPostmasterPullPlan(options);
-  const invalidResponse = invalidPlanResponse(plan, options.continueOnError);
+  const invalidResponse = invalidPlanExecutionResponse(plan, {
+    continueOnError: options.continueOnError,
+    error: 'Gear action plan contains invalid items. Nothing was executed.',
+  });
   if (invalidResponse) {
     return invalidResponse;
   }
 
-  const results: ExecutionResult[] = [
-    ...skippedInvalidResults(plan),
-    ...noopResults(plan),
+  const results: ActionExecutionResult[] = [
+    ...skippedInvalidActionResults(plan.plans),
+    ...noopActionResults(plan.plans),
   ];
   const http = await createAuthenticatedBungieHttpClient();
   const actions = plan.plans.flatMap((itemPlan) =>
@@ -519,5 +508,5 @@ export async function executePostmasterPullPlan(options: ExecuteGearActionOption
     }
   }
 
-  return baseExecuteResult(plan, results);
+  return baseExecuteResult(plan, results, options.continueOnError);
 }

@@ -5,8 +5,14 @@ import { buildInventoryView, type PublicCharacter } from '../inventory/inventory
 import type { InventoryItemRecord, PublicItem } from '../items/item-model.js';
 import { loadInventorySnapshot } from '../profile/profile-service.js';
 import type { ProfileCacheOptions } from '../profile/profile-cache.js';
-import { resultEnvelope } from '../result.js';
-import { formatExecutionError, waitBetweenGearActions } from './execution.js';
+import {
+  actionExecuteEnvelope,
+  actionPlanEnvelope,
+  formatExecutionError,
+  invalidPlanExecutionResponse,
+  queryWithContinueOnError,
+  waitBetweenGearActions,
+} from './execution.js';
 
 export interface TransferOptions extends AccountSelection, ProfileCacheOptions {
   itemIds: string[];
@@ -221,20 +227,15 @@ export async function buildTransferPlan(options: TransferOptions) {
 
   return {
     ok: plans.every((plan) => plan.ok),
-    ...resultEnvelope('gear-transfer-plan', {
-      query: {
-        itemIds: options.itemIds,
-        target: options.target,
-        amount,
-      },
-      source: {
-        endpoint: 'Destiny2.GetProfile',
-        components: snapshot.profileCache.components,
-        executionEndpoint: 'Destiny2.TransferItem',
-      },
+    ...actionPlanEnvelope('gear-transfer-plan', {
+      itemIds: options.itemIds,
+      target: options.target,
+      amount,
+    }, {
+      endpoint: 'Destiny2.GetProfile',
+      components: snapshot.profileCache.components,
+      executionEndpoint: 'Destiny2.TransferItem',
     }),
-    dryRun: true,
-    executed: false,
     account: snapshot.account,
     profileMintedAt: view.profileMintedAt,
     profileCache: snapshot.profileCache,
@@ -247,23 +248,12 @@ export async function buildTransferPlan(options: TransferOptions) {
 
 export async function executeTransferPlan(options: ExecuteTransferOptions) {
   const plan = await buildTransferPlan(options);
-  const invalidPlans = plan.plans.filter((itemPlan) => !itemPlan.ok);
-
-  if (invalidPlans.length && !options.continueOnError) {
-    return {
-      ...plan,
-      ...resultEnvelope('gear-transfer-execute', {
-        query: {
-          ...plan.query,
-          continueOnError: options.continueOnError ?? false,
-        },
-        source: plan.source,
-      }),
-      dryRun: false,
-      ok: false,
-      executed: false,
-      error: 'Transfer plan contains invalid items. Nothing was executed.',
-    };
+  const invalidResponse = invalidPlanExecutionResponse(plan, {
+    continueOnError: options.continueOnError,
+    error: 'Transfer plan contains invalid items. Nothing was executed.',
+  });
+  if (invalidResponse) {
+    return invalidResponse;
   }
 
   const http = await createAuthenticatedBungieHttpClient();
@@ -313,15 +303,12 @@ export async function executeTransferPlan(options: ExecuteTransferOptions) {
 
   return {
     ok: results.every((result) => result.ok),
-    ...resultEnvelope('gear-transfer-execute', {
-      query: {
-        ...plan.query,
-        continueOnError: options.continueOnError ?? false,
-      },
-      source: plan.source,
-    }),
+    ...actionExecuteEnvelope(
+      plan.kind,
+      queryWithContinueOnError(plan.query, options.continueOnError),
+      plan.source,
+    ),
     executed: true,
-    dryRun: false,
     account: plan.account,
     profileMintedAt: plan.profileMintedAt,
     profileCache: plan.profileCache,
