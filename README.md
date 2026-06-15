@@ -1,179 +1,111 @@
 # d2-skill
 
-Agent skills and local tooling for Destiny 2.
+> [切换到简体中文 / Switch to Simplified Chinese](README_zh.md)
 
-The goal of this project is to let an AI agent retrieve official Destiny 2 account and game information, inspect owned items, and run safe atomic item actions through the official Bungie.net API. The CLI should expose stable facts, evidence, plans, and narrow execution primitives; higher-level judgment stays in skills and agent reasoning.
+Local Destiny 2 tooling and agent skills built on the official Bungie.net API.
 
-## Setup
+This project gives an AI agent a safe, inspectable bridge into Destiny 2 data. It can answer where gear comes from, inspect your owned items and rolls, check profile progress, query activity history, and run narrow item actions such as transfer, equip, lock, and free socket insertion. The CLI returns structured JSON facts and safe action plans; subjective decisions stay in the agent and with the user.
 
-Create a Bungie app at the [Bungie Application Portal](https://www.bungie.net/en/Application). Use:
+## What It Can Do
+
+- Resolve official item information, source families, live vendor routes, vendor costs, affordability, and engram preview-pool routes.
+- Inspect owned inventory across characters and vault, including perks, stats, sockets, duplicate groups, and DIM wishlist evidence.
+- Run safe atomic gear actions: transfer, equip, lock/unlock, postmaster pull, and free reusable plug insertion. Destructive in-game actions such as dismantling are not automated.
+- Read game progress: currencies, triumph records, collectibles, craftables, metrics, progressions, milestones, and available activities.
+- Query activity and stat data: character list, activity history, PGCRs, historical stats, weapon usage, clan rewards, clan stats, leaderboards, and composite dungeon reports.
+- Inspect in-game loadout slots. Loadout application/editing is not implemented yet.
+- Fall back to read-only raw Bungie `/Platform/...` requests when a useful official API surface is not wrapped yet.
+
+## Quick Start
+
+Requires Node.js `>=22.13.0`.
+
+Create a Bungie app at the [Bungie Application Portal](https://www.bungie.net/en/Application):
 
 - OAuth client type: `Confidential`
 - Redirect URL: `https://127.0.0.1:28780/oauth/callback`
 - Scopes: `ReadDestinyInventoryAndVault`, `MoveEquipDestinyItems`
 
-Copy `.env.example` to `.env` and fill the app values:
-
-- `API_KEY`: Bungie app API key
-- `OAUTH_CLIENT_ID`: OAuth client ID
-- `OAUTH_CLIENT_SECRET`: OAuth client secret
-- `D2_MANIFEST_LANGUAGE`: Bungie manifest language for item and perk names; defaults to `zh-chs`
-
-Keep the default authorization, token, and redirect URLs unless the Bungie app registration changes. After cloning, run `pnpm install` once, then `pnpm dev auth login`.
-
-Requires Node.js `>=22.13.0`.
-
-## Agent Usage
-
-Use Claude Code, Codex, OpenClaw, or another agent from this repository root. You can either start the agent in this directory or tell it the checkout path.
-
-The repository contains agent instructions in `AGENTS.md` and repo-local skills under `skills/`. Agents that support `.codex/skills` or `.claude/skills` can discover the same skill directory through the checked-in symlinks.
-
-## CLI
-
-The CLI is the implementation boundary. Agent skills should call CLI commands instead of duplicating Bungie API logic.
-
-Current structure:
-
-- `src/cli.ts`: root CLI entrypoint.
-- `src/commands/`: command definitions.
-- `src/account/`: Destiny account resolution.
-- `src/activity/`: raw activity history and PGCR queries.
-- `src/api/`: read-only low-level Bungie API fallback.
-- `src/bungie/`: Bungie API HTTP client.
-- `src/cache/`: local SQLite cache.
-- `src/characters/`: character listing and character selection helpers.
-- `src/config/`: local environment loading.
-- `src/auth/`: Bungie OAuth login, callback handling, refresh, status, and token storage.
-- `src/manifest/`: manifest loading, caching, and definition tables.
-- `src/profile/`: Bungie profile snapshot loading.
-- `src/reports/`: analyzed report builders on top of raw CLI data.
-- `src/inventory/`: owned item collection views and search.
-- `src/items/`: item detail models and inspection.
-- `src/gear/`: transfer planning and execution.
-- `src/wishlist/`: DIM wishlist source parsing, fetching, and local cache.
-- `src/platform/`: OS-specific helpers.
-- `src/output.ts`: shared CLI output and error handling.
-- `skills/`: agent-facing skill descriptions.
-- `docs/`: project references and design notes.
-
-Development commands:
+Then configure and log in:
 
 ```bash
 pnpm install
-pnpm dev auth status
+cp .env.example .env
+# Fill API_KEY, OAUTH_CLIENT_ID, and OAUTH_CLIENT_SECRET in .env.
 pnpm build
+node dist/cli.js auth login
 node dist/cli.js auth status
 ```
 
-OAuth commands:
+Useful environment settings:
+
+- `API_KEY`: Bungie app API key.
+- `OAUTH_CLIENT_ID`: Bungie OAuth client ID.
+- `OAUTH_CLIENT_SECRET`: Bungie OAuth client secret.
+- `D2_MANIFEST_LANGUAGE`: localized manifest language for item, perk, activity, and vendor names. Defaults to `zh-chs`.
+
+OAuth tokens, wishlist caches, profile caches, and command audit logs are stored outside the repository under `~/.d2-skill/`.
+
+## Agent Skills
+
+Use Claude Code, Codex, OpenClaw, or another agent from this repository root. The checked-in skills are grouped by how an AI should use the system:
+
+- `d2-login`: authentication, token health, auth recovery, and routing to the right D2 skill.
+- `d2-info`: official information, item sources, vendor routes, live sales, costs, affordability, and current acquisition evidence.
+- `d2-items`: owned items, roll and wishlist evidence, duplicate review, transfers, safe gear actions, sockets, and read-only in-game loadouts.
+- `d2-progress`: currencies, records, collectibles, craftables, metrics, milestones, and current or available activity state.
+- `d2-stats`: characters, activity history, PGCRs, historical stats, dungeon reports, clan rewards, clan aggregate stats, and leaderboards.
+- `d2-api`: read-only Bungie `/Platform/...` fallback and SDK coverage diagnostics.
+
+Agents that support `.codex/skills` or `.claude/skills` can discover the same repo-local skill directory through the checked-in symlinks.
+
+## CLI Examples
+
+Use the CLI directly when you want machine-readable JSON facts:
 
 ```bash
-pnpm dev auth login
-pnpm dev auth status
-pnpm dev auth doctor
-pnpm dev auth refresh
-pnpm dev auth logout
-```
-
-OAuth tokens are stored outside the repository at `~/.d2-skill/oauth-token.json`.
-
-Each CLI run writes an audit record outside the repository at
-`~/.d2-skill/data/yyyyMMdd/yyyyMMddHHmmssSSS-command.json`, for example
-`~/.d2-skill/data/20260614/20260614160130091-auth-path.json`. The record includes
-the request arguments and response metadata, with `response.stdout` and
-`response.stderr` stored as either `{ "json": ... }` or `{ "text": "..." }`.
-
-Account commands:
-
-```bash
-node dist/cli.js account list
-```
-
-Character and activity commands:
-
-```bash
-node dist/cli.js character list
-node dist/cli.js activity history --character current --mode dungeon --count 50
-node dist/cli.js activity history --character all --mode raid --count 250 --pages 2
-node dist/cli.js activity pgcr --activity-id <activityInstanceId>
-```
-
-Report commands:
-
-```bash
-node dist/cli.js report dungeon
-node dist/cli.js report dungeon --refresh
-node dist/cli.js report dungeon --image
-```
-
-`report` commands are composite convenience commands. Prefer the smaller
-atomic commands (`activity history`, `activity pgcr`, and manifest/profile
-lookup commands) when a workflow needs reusable evidence for follow-up
-reasoning.
-
-Manifest commands:
-
-```bash
-node dist/cli.js manifest status
-node dist/cli.js manifest status --language en
-node dist/cli.js manifest update
-node dist/cli.js manifest update --language en
-```
-
-Low-level API fallback commands:
-
-```bash
-node dist/cli.js api request --path /Platform/Destiny2/Manifest/
-node dist/cli.js api request --path /Platform/Destiny2/2/Profile/<membershipId>/ --param components=100,200 --auth
-node dist/cli.js api coverage
-```
-
-`api request` is a read-only GET fallback for official Bungie `/Platform/...`
-endpoints that do not yet have a dedicated atomic command. Prefer domain
-commands for normal workflows, and promote repeated fallback patterns into
-stable CLI commands before updating skills.
-
-`api coverage` is an offline maintainer diagnostic. It compares
-`bungie-api-ts` endpoint functions with SDK endpoints currently imported by
-`src/`, so future CLI wrapper work can start from a stable JSON inventory
-instead of ad hoc source searches.
-
-Inventory and item commands:
-
-```bash
-node dist/cli.js inventory search --name '<localized item name>' --details perks,stats
-node dist/cli.js inventory search --perk '<localized perk name>' --type weapon --all --details perks
-node dist/cli.js inventory search --item-hash <inventoryItemHash> --details perks
-node dist/cli.js inventory search --item-ids <itemInstanceId1>,<itemInstanceId2> --refresh-profile
-node dist/cli.js inventory duplicates --type weapon --details perks --limit 20 --item-limit 5
+node dist/cli.js info item-source --name '庆典飞行'
+node dist/cli.js vendor sales --name '庆典飞行' --character current
+node dist/cli.js inventory search --name '<item name>' --details perks,stats
+node dist/cli.js inventory duplicates --type weapon --details perks --limit 20
 node dist/cli.js item inspect --item-id <itemInstanceId>
-```
-
-Item and perk names use `D2_MANIFEST_LANGUAGE`. The default `zh-chs` supports simplified Chinese names; set `D2_MANIFEST_LANGUAGE=en` to search English names.
-
-`--details perks` returns combined `perks` plus explicit `insertedPlugs` and `availablePlugs` fields.
-
-Inventory and transfer commands use a short-lived Bungie profile snapshot cache by default. Use `--refresh-profile` when validating post-transfer state or other externally changed inventory state, and `--profile-cache-ttl <seconds>` to tune a session. Inventory snapshots default to a 5 minute TTL; `character list` defaults to 15 minutes. `account list` uses a 15 minute linked-account cache and supports `--refresh-account`.
-
-Wishlist commands:
-
-```bash
-node dist/cli.js wishlist init
-node dist/cli.js wishlist list
-node dist/cli.js wishlist inspect --item-hash <inventoryItemHash> --limit 20
-node dist/cli.js wishlist parse --file <path> --role reference --limit 20
-node dist/cli.js wishlist parse --url <rawWishlistUrl> --source-id ad-hoc --role reference --limit 20
-```
-
-Configured wishlist sources live in `src/wishlist/sources.json`. Initialized wishlist files and parsed entry caches are stored outside the repository under `~/.d2-skill/wishlists/` and `~/.d2-skill/cache.sqlite`.
-
-Gear commands:
-
-```bash
 node dist/cli.js gear transfer plan --item-id <itemInstanceId> --target vault
-node dist/cli.js gear transfer execute --item-id <itemInstanceId> --target current
-node dist/cli.js gear transfer execute --item-id <itemInstanceId> --target current --wait
+node dist/cli.js profile craftables --name '<weapon name>'
+node dist/cli.js activity history --character current --mode dungeon --count 50
+node dist/cli.js report dungeon
 ```
 
-After a successful transfer, Bungie profile snapshots may briefly show stale item locations. Use `--verify` or `--wait` before issuing a dependent transfer, especially when doing `character -> vault -> character`.
+Run `node dist/cli.js --help` or `node dist/cli.js <command> --help` for the full command surface.
+
+Every command writes an audit record under `~/.d2-skill/data/yyyyMMdd/`. Use the `audit.path` returned in JSON when you need to reopen exact command evidence later.
+
+## Safety Model
+
+- The CLI owns Bungie API calls, OAuth, local caches, persistence, and JSON output.
+- Skills call the CLI and interpret stdout JSON; they should not duplicate Bungie API logic.
+- Commands are intentionally atomic. Search, inspect, parse, score, group, plan, and execute should remain separate unless a command is explicitly documented as composite.
+- The CLI provides deterministic facts, evidence, scores, and safe execution primitives. The AI composes commands, compares tradeoffs, and makes recommendations.
+- Composite outputs, such as `report dungeon`, are marked as composite and keep lower-level evidence commands available.
+- Cleanup workflows use duplicate groups, wishlist evidence, item inspection, and safe transfer primitives. The user handles in-game dismantling.
+- `api request` is GET-only and should be treated as a fallback for one-off official API exploration.
+
+## Development
+
+```bash
+pnpm typecheck
+pnpm test
+pnpm build
+```
+
+Core layout:
+
+- `src/cli.ts`: root CLI dispatcher.
+- `src/commands/`: command wiring.
+- `src/auth/`, `src/account/`, `src/characters/`: login and account context.
+- `src/info/`, `src/vendors/`, `src/manifest/`: official info, item source, vendor, and manifest logic.
+- `src/inventory/`, `src/items/`, `src/wishlist/`: owned item facts and roll evidence.
+- `src/gear/`, `src/sockets/`, `src/loadouts/`: safe item actions, socket inspection, and read-only in-game loadouts.
+- `src/profile/`, `src/activity/`, `src/stats/`, `src/clan/`, `src/reports/`: progress, activity, stats, clan data, and reports.
+- `src/api/`: read-only raw Bungie API fallback and SDK coverage diagnostics.
+- `skills/`: agent-facing skill instructions.
+- `docs/`: project references and design notes.
