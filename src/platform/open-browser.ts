@@ -11,7 +11,7 @@ export async function openInBrowser(url: string) {
     process.platform === 'darwin'
       ? [url]
       : process.platform === 'win32'
-        ? ['/c', 'start', '', url]
+        ? ['/c', 'start', '', url.replace(/&/g, '^&')]
         : [url];
 
   await new Promise<void>((resolve, reject) => {
