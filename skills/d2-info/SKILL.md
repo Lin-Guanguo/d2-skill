@@ -33,6 +33,23 @@ node dist/cli.js manifest status --language en
 - `public-vendors`: list character-agnostic public vendor sales. This is smaller than character-scoped `GetVendors`; use `vendor` commands for current character-specific sale, cost, and affordability checks.
 - `manifest status`: inspect local manifest cache metadata without network requests. Use it when localized search or cache state is unclear, especially after switching `D2_MANIFEST_LANGUAGE`.
 
+## Weekly Rotator Fallback
+
+Use Bungie data first:
+
+```bash
+node dist/cli.js info public-milestones
+```
+
+This wraps `Destiny2.GetPublicMilestones` (`GET /Platform/Destiny2/Milestones/`) and is the official source for currently exposed public milestones. It can expose current raid milestones, challenges, modifiers, and reset windows, but it may not expose every dungeon rotator or future rotation schedule.
+
+When the user asks for current or future weekly raid/dungeon rotators and `public-milestones` does not provide the needed dungeon or future-week evidence, browse community rotator references and clearly label them as non-official:
+
+- Primary community reference: Kyber's Corner, `https://kyberscorner.com/destiny2/weekly-featured-raids-and-dungeons/`
+- Cross-check reference: Blueberries.gg, `https://www.blueberries.gg/leveling/destiny-2-raid-dungeon-rotation/`
+
+When using these pages, report the reset window with exact dates, cite the page URL, and distinguish Bungie API evidence from community schedule evidence. If community sources disagree, say so and avoid presenting the future rotation as confirmed by Bungie.
+
 ## Item Source
 
 Use `info item-source` when the user asks where an item comes from, whether it is currently rollable, which route exposes it, or whether a Monument/event engram can drop it.
