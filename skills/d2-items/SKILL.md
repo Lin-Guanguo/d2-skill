@@ -25,7 +25,7 @@ Keep composite judgment in the agent: use CLI output as evidence for roll review
 - `wishlist list` and `wishlist inspect` read local SQLite cache only. Run `wishlist init` to fetch and refresh configured source URLs.
 - `wishlist parse --file` is local-only. `wishlist parse --url` fetches that URL once and does not update configured sources.
 - Linked account resolution is cached for 15 minutes.
-- Inventory commands (`inventory search`, `inventory duplicates`, `item inspect`, and transfer plan/execute) use a short-lived Bungie profile snapshot cache. Inventory snapshots default to 5 minutes; `character list` defaults to 15 minutes.
+- Inventory commands (`inventory search`, `inventory duplicates`, `item inspect`, and transfer plan/execute) use a short-lived Bungie profile snapshot cache. Inventory snapshots default to 15 minutes; `character list` defaults to 15 minutes.
 - Use `--refresh-profile` when exact post-transfer or externally changed state matters. Use `--profile-cache-ttl <seconds>` to tune a session.
 - Use `account list --refresh-account` when account selection or cross-save state may have changed.
 - Manifest definitions are cached locally, but loading still checks Bungie manifest metadata before using cached tables.

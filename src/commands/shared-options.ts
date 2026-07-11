@@ -55,6 +55,11 @@ export interface ProfileCacheCliOptions extends AccountCacheCliOptions {
   profileCacheTtl?: number;
 }
 
+export interface VendorCacheCliOptions {
+  refreshVendors?: boolean;
+  vendorCacheTtl?: number;
+}
+
 export class D2Command extends Command {
   override createCommand(name?: string) {
     return new D2Command(name);
@@ -76,6 +81,12 @@ export class D2Command extends Command {
     return this
       .option('--refresh-profile', 'bypass the short-lived profile snapshot cache')
       .option('--profile-cache-ttl <seconds>', 'profile snapshot cache TTL in seconds', parsePositiveInteger);
+  }
+
+  vendorCacheOptions() {
+    return this
+      .option('--refresh-vendors', 'bypass the short-lived vendor sales cache')
+      .option('--vendor-cache-ttl <seconds>', 'vendor sales cache TTL in seconds', parsePositiveInteger);
   }
 }
 
@@ -100,4 +111,15 @@ export function accountCacheRequestOptions(options: AccountCacheCliOptions) {
     refreshAccount: options.refreshAccount,
     accountCacheTtlSeconds: options.accountCacheTtl,
   };
+}
+
+export function vendorCacheRequestOptions(options: VendorCacheCliOptions) {
+  return {
+    refreshVendors: options.refreshVendors,
+    vendorCacheTtlSeconds: options.vendorCacheTtl,
+  };
+}
+
+export function parseCommaSeparatedPositiveIntegers(value: string | undefined) {
+  return parseCommaSeparatedList(value)?.map(parsePositiveInteger);
 }

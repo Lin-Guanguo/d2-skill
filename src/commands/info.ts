@@ -10,14 +10,18 @@ import {
   AccountOptions,
   D2Command,
   ProfileCacheCliOptions,
+  VendorCacheCliOptions,
+  parseCommaSeparatedPositiveIntegers,
   parseNonNegativeInteger,
   parsePositiveInteger,
   profileCacheRequestOptions,
+  vendorCacheRequestOptions,
 } from './shared-options.js';
 
-interface ItemSourceCliOptions extends AccountOptions, ProfileCacheCliOptions {
+interface ItemSourceCliOptions extends AccountOptions, ProfileCacheCliOptions, VendorCacheCliOptions {
   name?: string;
   itemHash?: number;
+  itemHashes?: number[];
   vendors?: boolean;
   limit?: number;
 }
@@ -84,15 +88,18 @@ export function createInfoCommand() {
     .description('Resolve an item source family and current vendor or engram routes')
     .option('--name <text>', 'item display name or substring')
     .option('--item-hash <hash>', 'exact Destiny inventory item hash', parsePositiveInteger)
+    .option('--item-hashes <hashes>', 'comma-separated exact Destiny inventory item hashes', parseCommaSeparatedPositiveIntegers)
     .option('--no-vendors', 'skip current live vendor sales lookup')
     .option('--limit <count>', 'maximum manifest item definitions to match', parseNonNegativeInteger, 20)
     .accountOptions()
     .profileCacheOptions()
+    .vendorCacheOptions()
     .action((options: ItemSourceCliOptions) =>
       runCommand(() =>
         resolveItemSource({
           ...options,
           ...profileCacheRequestOptions(options),
+          ...vendorCacheRequestOptions(options),
         }),
       ),
     );

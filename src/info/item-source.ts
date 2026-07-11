@@ -1,17 +1,14 @@
 import {
-  DestinyComponentType,
-  DestinyVendorFilter,
   type DestinyCollectibleDefinition,
   type DestinyInventoryItemDefinition,
   type DestinyItemQuantity,
   type DestinyVendorSaleItemComponent,
-  getVendors,
+  type DestinyVendorsResponse,
 } from 'bungie-api-ts/destiny2';
 import {
   type DestinyAccountRef,
   type AccountSelection,
 } from '../account/account-service.js';
-import { createAuthenticatedBungieHttpClient } from '../bungie/http-client.js';
 import { CHARACTER_PROFILE_COMPONENTS } from '../bungie/profile-components.js';
 import {
   type CharacterListOptions,
@@ -19,11 +16,18 @@ import {
   loadCharacterProfile,
 } from '../characters/character-service.js';
 import type { ProfileCacheOptions } from '../profile/profile-cache.js';
+import {
+  LIVE_VENDOR_COMPONENTS,
+  loadCachedVendors,
+  type VendorCacheOptions,
+  type VendorCacheSummary,
+} from '../vendors/vendor-cache.js';
 import { INFO_MANIFEST_TABLES, type InfoManifest, loadInfoManifest } from './info-manifest.js';
 
-export interface ItemSourceOptions extends AccountSelection, ProfileCacheOptions {
+export interface ItemSourceOptions extends AccountSelection, ProfileCacheOptions, VendorCacheOptions {
   name?: string;
   itemHash?: number;
+  itemHashes?: number[];
   vendors?: boolean;
   limit?: number;
 }
@@ -40,13 +44,12 @@ interface MatchEvidence {
   name?: string;
 }
 
-const DEFAULT_LIMIT = 20;
-const VENDOR_COMPONENTS = [
-  DestinyComponentType.Vendors,
-  DestinyComponentType.VendorCategories,
-  DestinyComponentType.VendorSales,
-] as const;
+interface ItemSourceQuery {
+  name?: string;
+  itemHash?: number;
+}
 
+const DEFAULT_LIMIT = 20;
 function normalizeText(value: string | undefined) {
   return value?.trim().toLocaleLowerCase() ?? '';
 }
@@ -59,31 +62,53 @@ function itemDefinitionValues(manifest: InfoManifest) {
   return Object.values(manifest.DestinyInventoryItemDefinition);
 }
 
-function findItemMatches(manifest: InfoManifest, options: ItemSourceOptions): ItemMatch[] {
-  const limit = options.limit ?? DEFAULT_LIMIT;
+function uniqueItemHashes(itemHash: number | undefined, itemHashes: number[] | undefined) {
+  return [...new Set([
+    ...(itemHash !== undefined ? [itemHash] : []),
+    ...(itemHashes ?? []),
+  ])];
+}
 
-  if (options.itemHash !== undefined) {
-    const definition = manifest.DestinyInventoryItemDefinition[options.itemHash];
+function itemSourceQueries(options: ItemSourceOptions): ItemSourceQuery[] {
+  const hashes = uniqueItemHashes(options.itemHash, options.itemHashes);
+  if (hashes.length) {
+    return hashes.map((itemHash) => ({ itemHash }));
+  }
+
+  if (options.name) {
+    return [{ name: options.name }];
+  }
+
+  throw new Error('Provide --name, --item-hash, or --item-hashes.');
+}
+
+function findItemMatches(
+  manifest: InfoManifest,
+  query: ItemSourceQuery,
+  limit: number,
+): ItemMatch[] {
+  if (query.itemHash !== undefined) {
+    const definition = manifest.DestinyInventoryItemDefinition[query.itemHash];
     if (!definition) {
       return [];
     }
-    return [{ itemHash: options.itemHash, match: 'hash', definition }];
+    return [{ itemHash: query.itemHash, match: 'hash', definition }];
   }
 
-  const query = normalizeText(options.name);
-  if (!query) {
-    throw new Error('Provide --name or --item-hash.');
+  const normalizedQuery = normalizeText(query.name);
+  if (!normalizedQuery) {
+    throw new Error('Provide --name, --item-hash, or --item-hashes.');
   }
 
   const definitions = itemDefinitionValues(manifest).filter((definition) =>
-    normalizeText(displayName(definition)).includes(query),
+    normalizeText(displayName(definition)).includes(normalizedQuery),
   );
-  const exact = definitions.filter((definition) => normalizeText(displayName(definition)) === query);
+  const exact = definitions.filter((definition) => normalizeText(displayName(definition)) === normalizedQuery);
   const selected = exact.length ? exact : definitions;
 
   return selected.slice(0, limit).map((definition) => ({
     itemHash: definition.hash,
-    match: normalizeText(displayName(definition)) === query ? 'exact-name' : 'name-contains',
+    match: normalizeText(displayName(definition)) === normalizedQuery ? 'exact-name' : 'name-contains',
     definition,
   }));
 }
@@ -273,24 +298,17 @@ function summarizeSale(
   };
 }
 
-async function searchVendorRoutes(
-  account: DestinyAccountRef,
+function searchVendorRoutes(
+  response: DestinyVendorsResponse,
   character: CharacterSummary,
   manifest: InfoManifest,
   matches: ItemMatch[],
   allowNameMatches: boolean,
+  vendorCache?: VendorCacheSummary,
 ) {
   const targets = targetSets(matches, allowNameMatches);
-  const http = await createAuthenticatedBungieHttpClient();
-  const vendorsResponse = await getVendors(http, {
-    destinyMembershipId: account.membershipId,
-    membershipType: account.membershipType,
-    characterId: character.characterId,
-    components: [...VENDOR_COMPONENTS],
-    filter: DestinyVendorFilter.None,
-  });
-  const vendors = vendorsResponse.Response.vendors?.data ?? {};
-  const sales = vendorsResponse.Response.sales?.data ?? {};
+  const vendors = response.vendors?.data ?? {};
+  const sales = response.sales?.data ?? {};
   const directRoutes = [];
   const indirectRoutes = [];
 
@@ -335,6 +353,7 @@ async function searchVendorRoutes(
   return {
     checkedAt: new Date().toISOString(),
     characterId: character.characterId,
+    ...(vendorCache ? { vendorCache } : {}),
     vendorCount: Object.keys(vendors).length,
     salesVendorCount: Object.keys(sales).length,
     directRoutes,
@@ -342,15 +361,53 @@ async function searchVendorRoutes(
   };
 }
 
+async function loadVendorResponse(
+  account: DestinyAccountRef,
+  character: CharacterSummary,
+  options: ItemSourceOptions,
+) {
+  return loadCachedVendors(account, character.characterId, LIVE_VENDOR_COMPONENTS, options);
+}
+
+function summarizeQueryResult(
+  query: ItemSourceQuery,
+  matches: ItemMatch[],
+  manifest: InfoManifest,
+  liveVendors: ReturnType<typeof searchVendorRoutes> | { skipped: true } | undefined,
+  options: ItemSourceOptions,
+) {
+  return {
+    query: {
+      name: query.name,
+      itemHash: query.itemHash,
+      limit: options.limit ?? DEFAULT_LIMIT,
+      vendors: options.vendors ?? true,
+    },
+    count: matches.length,
+    items: matches.map((match) => ({
+      match: match.match,
+      ...summarizeItem(match.definition, manifest),
+    })),
+    sourceFamilies: uniqueSourceFamilies(matches, manifest),
+    ...(liveVendors ? { liveVendors } : {}),
+  };
+}
+
 export async function resolveItemSource(options: ItemSourceOptions) {
   const includeVendors = options.vendors ?? true;
+  const limit = options.limit ?? DEFAULT_LIMIT;
+  const queries = itemSourceQueries(options);
   const [manifest, characterSnapshot] = await Promise.all([
     loadInfoManifest(),
     includeVendors
       ? loadCharacterProfile(options as CharacterListOptions)
       : Promise.resolve(undefined),
   ]);
-  const matches = findItemMatches(manifest, options);
+  const results = queries.map((query) => ({
+    query,
+    matches: findItemMatches(manifest, query, limit),
+  }));
+  const matches = results.flatMap((result) => result.matches);
 
   if (!matches.length) {
     return {
@@ -360,10 +417,20 @@ export async function resolveItemSource(options: ItemSourceOptions) {
       query: {
         name: options.name,
         itemHash: options.itemHash,
+        itemHashes: options.itemHashes,
       },
       count: 0,
       items: [],
       sourceFamilies: [],
+      queries: results.map((result) =>
+        summarizeQueryResult(
+          result.query,
+          result.matches,
+          manifest,
+          includeVendors ? undefined : { skipped: true },
+          options,
+        ),
+      ),
       liveVendors: includeVendors ? undefined : { skipped: true },
       source: {
         manifestTables: INFO_MANIFEST_TABLES,
@@ -371,16 +438,41 @@ export async function resolveItemSource(options: ItemSourceOptions) {
     };
   }
 
-  const liveVendors =
-    includeVendors && characterSnapshot
-      ? await searchVendorRoutes(
-          characterSnapshot.account,
-          characterSnapshot.currentCharacter,
-          manifest,
-          matches,
-          options.itemHash === undefined,
-        )
-      : { skipped: true };
+  const vendorResponse = includeVendors && characterSnapshot
+    ? await loadVendorResponse(
+        characterSnapshot.account,
+        characterSnapshot.currentCharacter,
+        options,
+      )
+    : undefined;
+  const liveVendors = vendorResponse && characterSnapshot
+    ? searchVendorRoutes(
+        vendorResponse.response,
+        characterSnapshot.currentCharacter,
+        manifest,
+        matches,
+        options.itemHash === undefined && !options.itemHashes?.length,
+        vendorResponse.vendorCache,
+      )
+    : { skipped: true };
+  const queryResults = results.map((result) =>
+    summarizeQueryResult(
+      result.query,
+      result.matches,
+      manifest,
+      vendorResponse && characterSnapshot
+        ? searchVendorRoutes(
+            vendorResponse.response,
+            characterSnapshot.currentCharacter,
+            manifest,
+            result.matches,
+            result.query.itemHash === undefined,
+            vendorResponse.vendorCache,
+          )
+        : { skipped: true },
+      options,
+    ),
+  );
 
   return {
     ok: true,
@@ -392,8 +484,10 @@ export async function resolveItemSource(options: ItemSourceOptions) {
     query: {
       name: options.name,
       itemHash: options.itemHash,
+      itemHashes: options.itemHashes,
       limit: options.limit ?? DEFAULT_LIMIT,
       vendors: includeVendors,
+      vendorCacheTtlSeconds: options.vendorCacheTtlSeconds,
     },
     count: matches.length,
     items: matches.map((match) => ({
@@ -401,11 +495,12 @@ export async function resolveItemSource(options: ItemSourceOptions) {
       ...summarizeItem(match.definition, manifest),
     })),
     sourceFamilies: uniqueSourceFamilies(matches, manifest),
+    queries: queryResults,
     liveVendors,
     source: {
       endpoints: includeVendors ? ['Destiny2.GetProfile', 'Destiny2.GetVendors'] : [],
       profileComponents: includeVendors ? CHARACTER_PROFILE_COMPONENTS : [],
-      vendorComponents: includeVendors ? VENDOR_COMPONENTS : [],
+      vendorComponents: includeVendors ? LIVE_VENDOR_COMPONENTS : [],
       manifestTables: INFO_MANIFEST_TABLES,
     },
   };

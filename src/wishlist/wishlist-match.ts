@@ -28,6 +28,7 @@ export interface WishlistMatcherOptions {
 
 export interface WishlistMatchedPerk {
   plugHash: number;
+  ownedPlugHash?: number;
   name: string;
 }
 
@@ -95,6 +96,10 @@ function unique<T>(values: T[]) {
   return [...new Set(values)];
 }
 
+export function matchablePlugHashes(perk: Pick<PublicPerk, 'plugHash' | 'equivalentPlugHashes'>) {
+  return unique([perk.plugHash, ...(perk.equivalentPlugHashes ?? [])]);
+}
+
 function entryScore(entry: WishlistEntry) {
   if (entry.polarity === 'negative') {
     return -Math.max(entry.sourceWeight, 1);
@@ -159,8 +164,10 @@ function itemPlugMap(item: PublicItem) {
   const plugs = new Map<number, PublicPerk>();
   for (const perkGroup of [item.perks, item.insertedPlugs, item.availablePlugs]) {
     for (const perk of perkGroup ?? []) {
-      if (!plugs.has(perk.plugHash)) {
-        plugs.set(perk.plugHash, perk);
+      for (const plugHash of matchablePlugHashes(perk)) {
+        if (!plugs.has(plugHash)) {
+          plugs.set(plugHash, perk);
+        }
       }
     }
   }
@@ -172,10 +179,16 @@ function entryMatches(entry: WishlistEntry, plugs: Map<number, PublicPerk>) {
 }
 
 function matchedPerks(entry: WishlistEntry, plugs: Map<number, PublicPerk>): WishlistMatchedPerk[] {
-  return entry.perkHashes.map((plugHash) => ({
-    plugHash,
-    name: plugs.get(plugHash)?.name ?? String(plugHash),
-  }));
+  return entry.perkHashes.map((plugHash) => {
+    const ownedPerk = plugs.get(plugHash);
+    return {
+      plugHash,
+      ...(ownedPerk && ownedPerk.plugHash !== plugHash
+        ? { ownedPlugHash: ownedPerk.plugHash }
+        : undefined),
+      name: ownedPerk?.name ?? String(plugHash),
+    };
+  });
 }
 
 function publicMatchedEntry(entry: WishlistEntry, plugs: Map<number, PublicPerk>): WishlistMatchedEntry {

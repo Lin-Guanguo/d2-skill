@@ -118,7 +118,7 @@ interface LoadoutActionPlan {
   noop: boolean;
 }
 
-const DEFAULT_LOADOUT_PROFILE_CACHE_TTL_SECONDS = 300;
+const DEFAULT_LOADOUT_PROFILE_CACHE_TTL_SECONDS = 900;
 const LOADOUT_PROFILE_COMPONENTS = [
   DestinyComponentType.Profiles,
   DestinyComponentType.Characters,

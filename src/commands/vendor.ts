@@ -8,12 +8,14 @@ import {
   AccountOptions,
   D2Command,
   ProfileCacheCliOptions,
+  VendorCacheCliOptions,
   parseNonNegativeInteger,
   parsePositiveInteger,
   profileCacheRequestOptions,
+  vendorCacheRequestOptions,
 } from './shared-options.js';
 
-interface VendorCliOptions extends AccountOptions, ProfileCacheCliOptions {
+interface VendorCliOptions extends AccountOptions, ProfileCacheCliOptions, VendorCacheCliOptions {
   character?: string;
   vendorHash?: number;
   name?: string;
@@ -30,6 +32,7 @@ function vendorOptions(options: VendorCliOptions) {
   return {
     ...options,
     ...profileCacheRequestOptions(options),
+    ...vendorCacheRequestOptions(options),
   };
 }
 
@@ -60,6 +63,7 @@ export function createVendorCommand() {
   )
     .accountOptions()
     .profileCacheOptions()
+    .vendorCacheOptions()
     .action((options: VendorCliOptions) =>
       runCommand(() => listVendors(vendorOptions(options))),
     );
@@ -88,6 +92,7 @@ export function createVendorCommand() {
   )
     .accountOptions()
     .profileCacheOptions()
+    .vendorCacheOptions()
     .action((options: VendorCliOptions) =>
       runCommand(() => searchVendorSales(vendorOptions(options))),
     );

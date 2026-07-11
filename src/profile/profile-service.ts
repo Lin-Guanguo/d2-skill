@@ -23,7 +23,7 @@ export interface InventorySnapshot {
   manifest: DisplayManifest;
   profileCache: ProfileCacheSummary;
 }
-const DEFAULT_INVENTORY_PROFILE_CACHE_TTL_SECONDS = 300;
+const DEFAULT_INVENTORY_PROFILE_CACHE_TTL_SECONDS = 900;
 
 function assertInventoryComponents(profile: DestinyProfileResponse) {
   if (!profile.profileInventory?.data || !profile.characterInventories?.data) {

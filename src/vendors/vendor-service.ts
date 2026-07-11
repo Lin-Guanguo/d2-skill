@@ -1,6 +1,4 @@
 import {
-  DestinyComponentType,
-  DestinyVendorFilter,
   VendorItemStatus,
   type DestinyCurrenciesComponent,
   type DestinyItemQuantity,
@@ -8,7 +6,6 @@ import {
   type DestinyVendorComponent,
   type DestinyVendorSaleItemComponent,
   getVendor,
-  getVendors,
 } from 'bungie-api-ts/destiny2';
 import {
   type AccountSelection,
@@ -22,13 +19,18 @@ import { type InfoManifest, loadInfoManifest } from '../info/info-manifest.js';
 import type { ProfileCacheOptions } from '../profile/profile-cache.js';
 import { createAuthenticatedBungieHttpClient } from '../bungie/http-client.js';
 import {
+  LIVE_VENDOR_COMPONENTS,
+  loadCachedVendors,
+  type VendorCacheOptions,
+} from './vendor-cache.js';
+import {
   type VendorSaleQuery,
   saleStatusFlags,
   selectVendorSales,
   summarizeCostAffordability,
 } from './vendor-model.js';
 
-export interface VendorOptions extends AccountSelection, ProfileCacheOptions {
+export interface VendorOptions extends AccountSelection, ProfileCacheOptions, VendorCacheOptions {
   character?: string;
 }
 
@@ -39,13 +41,6 @@ export interface VendorInspectOptions extends VendorOptions {
 export interface VendorSalesOptions extends VendorOptions, VendorSaleQuery {}
 
 const DEFAULT_LIMIT = 50;
-const VENDOR_COMPONENTS = [
-  DestinyComponentType.Vendors,
-  DestinyComponentType.VendorCategories,
-  DestinyComponentType.VendorSales,
-  DestinyComponentType.CurrencyLookups,
-] as const;
-
 function selectCharacter(characters: CharacterSummary[], current: CharacterSummary, selector = 'current') {
   const normalized = selector.trim();
   if (!normalized || normalized === 'current') {
@@ -114,7 +109,7 @@ function vendorDisplay(manifest: InfoManifest, vendorHash: number | undefined) {
 function source() {
   return {
     endpoint: 'Destiny2.GetVendors',
-    components: VENDOR_COMPONENTS,
+    components: LIVE_VENDOR_COMPONENTS,
   };
 }
 
@@ -248,21 +243,21 @@ function baseResult(
 
 export async function listVendors(options: VendorOptions = {}) {
   const context = await loadVendorContext(options);
-  const http = await createAuthenticatedBungieHttpClient();
-  const response = await getVendors(http, {
-    destinyMembershipId: context.characterSnapshot.account.membershipId,
-    membershipType: context.characterSnapshot.account.membershipType,
-    characterId: context.character.characterId,
-    components: [...VENDOR_COMPONENTS],
-    filter: DestinyVendorFilter.None,
-  });
-  const vendors = response.Response.vendors?.data ?? {};
-  const sales = response.Response.sales?.data ?? {};
+  const { response, vendorCache } = await loadCachedVendors(
+    context.characterSnapshot.account,
+    context.character.characterId,
+    LIVE_VENDOR_COMPONENTS,
+    options,
+  );
+  const vendors = response.vendors?.data ?? {};
+  const sales = response.sales?.data ?? {};
 
   return {
     ...baseResult('vendor-list', context, {
       character: options.character ?? 'current',
+      vendorCacheTtlSeconds: options.vendorCacheTtlSeconds,
     }),
+    vendorCache,
     count: Object.keys(vendors).length,
     vendors: Object.entries(vendors).map(([vendorHash, vendor]) =>
       summarizeVendor(
@@ -284,7 +279,7 @@ export async function inspectVendor(options: VendorInspectOptions) {
     membershipType: context.characterSnapshot.account.membershipType,
     characterId: context.character.characterId,
     vendorHash: options.vendorHash,
-    components: [...VENDOR_COMPONENTS],
+    components: [...LIVE_VENDOR_COMPONENTS],
   });
   const vendor = response.Response.vendor?.data;
   const sales = response.Response.sales?.data ?? {};
@@ -318,16 +313,14 @@ export async function inspectVendor(options: VendorInspectOptions) {
 
 export async function searchVendorSales(options: VendorSalesOptions = {}) {
   const context = await loadVendorContext(options);
-  const http = await createAuthenticatedBungieHttpClient();
-  const response = await getVendors(http, {
-    destinyMembershipId: context.characterSnapshot.account.membershipId,
-    membershipType: context.characterSnapshot.account.membershipType,
-    characterId: context.character.characterId,
-    components: [...VENDOR_COMPONENTS],
-    filter: DestinyVendorFilter.None,
-  });
-  const sales = Object.entries(response.Response.sales?.data ?? {}).flatMap(([vendorHash, saleSet]) => {
-    const currencyLookups = response.Response.currencyLookups?.data;
+  const { response, vendorCache } = await loadCachedVendors(
+    context.characterSnapshot.account,
+    context.character.characterId,
+    LIVE_VENDOR_COMPONENTS,
+    options,
+  );
+  const sales = Object.entries(response.sales?.data ?? {}).flatMap(([vendorHash, saleSet]) => {
+    const currencyLookups = response.currencyLookups?.data;
     return Object.entries(saleSet.saleItems ?? {}).map(([saleIndex, sale]) =>
       summarizeSale(context.manifest, Number(vendorHash), saleIndex, sale, currencyLookups),
     );
@@ -346,7 +339,9 @@ export async function searchVendorSales(options: VendorSalesOptions = {}) {
       affordable: options.affordable,
       limit: options.limit ?? DEFAULT_LIMIT,
       all: options.all,
+      vendorCacheTtlSeconds: options.vendorCacheTtlSeconds,
     }),
+    vendorCache,
     ...selected,
     source: source(),
   };

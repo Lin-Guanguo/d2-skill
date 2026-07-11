@@ -160,6 +160,21 @@ function plugName(snapshot: InventorySnapshot, plugHash: number) {
   };
 }
 
+function equivalentPlugHashes(snapshot: InventorySnapshot, plugHash: number) {
+  const plug = snapshot.manifest.DestinyInventoryItemDefinition[plugHash];
+  const iconHash = plug?.displayProperties.iconHash;
+  if (!plug || !iconHash || iconHash === plugHash) {
+    return undefined;
+  }
+
+  const iconDefinition = snapshot.manifest.DestinyInventoryItemDefinition[iconHash];
+  if (iconDefinition?.displayProperties.name !== plug.displayProperties.name) {
+    return undefined;
+  }
+
+  return [plugHash, iconHash];
+}
+
 function normalizeInsertedPlugs(
   snapshot: InventorySnapshot,
   sockets: DestinyItemSocketState[] | undefined,
@@ -178,10 +193,12 @@ function normalizeInsertedPlugs(
       return [];
     }
 
+    const equivalentHashes = equivalentPlugHashes(snapshot, socket.plugHash);
     return [
       {
         socketIndex,
         plugHash: socket.plugHash,
+        ...(equivalentHashes ? { equivalentPlugHashes: equivalentHashes } : undefined),
         name: plug.name,
         description: plug.description,
         source: 'inserted' as const,
@@ -207,10 +224,12 @@ function normalizeReusablePlugs(
         return [];
       }
 
+      const equivalentHashes = equivalentPlugHashes(snapshot, plugState.plugItemHash);
       return [
         {
           socketIndex: Number(socketIndex),
           plugHash: plugState.plugItemHash,
+          ...(equivalentHashes ? { equivalentPlugHashes: equivalentHashes } : undefined),
           name: plug.name,
           description: plug.description,
           source: 'reusable' as const,

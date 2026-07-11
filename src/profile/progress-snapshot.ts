@@ -72,7 +72,7 @@ interface OutputListQuery extends ListQuery {
   [key: string]: unknown;
 }
 
-const DEFAULT_PROFILE_PROGRESS_CACHE_TTL_SECONDS = 300;
+const DEFAULT_PROFILE_PROGRESS_CACHE_TTL_SECONDS = 900;
 export const DEFAULT_LIMIT = 50;
 export const PROFILE_PROGRESS_COMPONENTS = [
   DestinyComponentType.Profiles,

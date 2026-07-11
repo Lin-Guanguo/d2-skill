@@ -64,6 +64,7 @@ export interface PublicItem {
 export interface PublicPerk {
   socketIndex: number;
   plugHash: number;
+  equivalentPlugHashes?: number[];
   name: string;
   description: string;
   source: 'inserted' | 'reusable';

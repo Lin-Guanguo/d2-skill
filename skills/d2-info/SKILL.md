@@ -58,10 +58,11 @@ Use `info item-source` when the user asks where an item comes from, whether it i
 test -f dist/cli.js || pnpm build
 node dist/cli.js info item-source --name '<item name>'
 node dist/cli.js info item-source --item-hash '<itemHash>'
+node dist/cli.js info item-source --item-hashes '<itemHash1>,<itemHash2>'
 node dist/cli.js info item-source --name '<item name>' --no-vendors
 ```
 
-Use `--item-hash` when the user cares about an exact reprised or tiered version. Use `--no-vendors` for manifest-only source lookup.
+Use `--item-hash` when the user cares about an exact reprised or tiered version. Use `--item-hashes` for several exact versions in one vendor scan. Use `--no-vendors` for manifest-only source lookup.
 
 ## Live Vendor Sales
 
@@ -77,7 +78,7 @@ node dist/cli.js vendor sales --cost-name '<currency text>' --character current
 node dist/cli.js vendor sales --vendor-hash '<vendorHash>' --purchasable --affordable
 ```
 
-Use `--refresh-profile` when currency balances, rank state, or vendor availability may have just changed.
+Use `--refresh-profile` when currency balances or rank state may have just changed. Character-scoped `GetVendors` responses are shared by `vendor` commands and `info item-source`; use `--refresh-vendors` when vendor availability or sales may have just changed, and `--vendor-cache-ttl <seconds>` to tune a session.
 
 Important vendor fields:
 
@@ -104,6 +105,8 @@ Important output fields:
 - `liveVendors.indirectRoutes[]`: current vendor sales whose preview pool contains the item. This is the key route for Monument of Triumph and event weapon engrams.
 - `liveVendors.indirectRoutes[].sale`: the sold item, vendor sale index, purchase status, and costs.
 - `liveVendors.indirectRoutes[].preview.hits[]`: the exact preview-pool item hashes that matched the target.
+- `liveVendors.vendorCache`: whether the current vendor response came from local cache, its TTL, and expiry.
+- `queries[]`: per-query source results when using `--item-hashes`; prefer these for per-item attribution while using top-level `items[]`, `sourceFamilies[]`, and `liveVendors` as aggregate evidence.
 - `audit.path`: saved JSON output under `~/.d2-skill/data/`; use it as the canonical saved copy for follow-up reasoning.
 
 ## Acquisition Reasoning
