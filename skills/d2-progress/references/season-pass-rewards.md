@@ -15,6 +15,8 @@ Use this workflow to audit old Destiny 2 season-pass rewards, classify unclaimed
 - Use the repo-local OAuth and CLI for read-only profile, settings, and manifest data.
 - Treat `POST /Platform/Destiny2/Actions/Seasons/ClaimReward/` as a separate first-party write path. Bungie documents it as requiring `BnetWrite`; Bungie's scope description says this elevated scope is not meant for third-party applications.
 - Do not say that OAuth itself is technically incapable of claiming. The precise limitation is that a token must belong to an application granted `BnetWrite`, while an ordinary third-party application should not expect that grant. A rejected call commonly returns HTTP 403 with `AccessNotPermittedByApplicationScope` and `RequiredScope: BnetWrite`.
+- Do not interpret "all permissions" selected in Bungie's application UI as including `BnetWrite`. The UI exposes the scopes available to that application; a hidden or first-party-only scope is not granted by selecting every visible option.
+- Do not retry login, refresh, or OAuth authorization to fix this application-scope error. A token can receive only scopes already granted to its application; only Bungie granting `BnetWrite` to the application would make the direct OAuth claim path viable.
 - Use an existing signed-in Bungie.net Chrome tab when the user's third-party OAuth token lacks this scope. This is a full first-party web session, not a partial OAuth session.
 - Bungie Help currently says earned pass rewards older than the supported current/previous window are unavailable. Older states or claims exposed by the backend are unsupported implementation behavior and can disappear without notice. Never promise that an old reward remains claimable.
 
