@@ -1,6 +1,6 @@
 ---
 name: d2-progress
-description: Query read-only Destiny 2 profile progress through the repo-local CLI. Use when a task needs currencies, triumph records, collectibles, craftable weapon unlocks, metrics, character progressions, milestones, current activity, available activities, or completion/acquisition state evidence.
+description: Query read-only Destiny 2 profile progress through the repo-local CLI. Use when a task needs currencies, triumph records, collectibles, craftable weapon unlocks, metrics, character progressions, milestones, season-pass reward history or unclaimed reward analysis, current activity, available activities, or completion/acquisition state evidence.
 ---
 
 # D2 Progress
@@ -33,6 +33,12 @@ node dist/cli.js profile activities --name '<activity text>' --character current
 ```
 
 Use `--limit <count>` for exploration and `--all` only when a complete list is needed. Use `--refresh-profile` when the user expects state changed in the last few minutes.
+
+## Season Pass Rewards
+
+For historical season-pass enumeration, unclaimed reward classification, OAuth scope limits, or an explicitly authorized claim through an existing Bungie.net browser session, read [references/season-pass-rewards.md](references/season-pass-rewards.md) completely before acting.
+
+Keep the CLI path read-only. Ordinary OAuth is suitable for profile and manifest analysis, but the season-pass claim endpoint requires Bungie's first-party `BnetWrite` scope. Route an authorized claim through the available Chrome-control skill and the user's existing Bungie.net session; do not add the endpoint to `d2-api`, which is intentionally GET-only.
 
 ## Interpretation
 
