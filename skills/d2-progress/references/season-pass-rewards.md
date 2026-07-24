@@ -8,6 +8,7 @@ Use this workflow to audit old Destiny 2 season-pass rewards, classify unclaimed
 - [Read-Only Enumeration](#read-only-enumeration)
 - [Reward State](#reward-state)
 - [Classification](#classification)
+- [Exact Currency Withdrawal](#exact-currency-withdrawal)
 - [Authorized Browser Claim](#authorized-browser-claim)
 
 ## Capability Boundary
@@ -101,6 +102,20 @@ Group the report in this order:
 3. **Special items:** weapons, armor, universal ornaments, shaders, emotes, finishers, ships, vehicles, and other unique cosmetics. Keep individual reward slots visible instead of reducing them to quantity totals.
 
 Do not infer the valid character solely from item class metadata. Character-specific reward state is authoritative; some ornaments have generic item metadata but are claimable on only one class.
+
+## Exact Currency Withdrawal
+
+Use this planning workflow when the user requests an exact amount of a currency, such as "claim 300,000 Glimmer":
+
+1. Refresh the current balance with `profile currencies --name '<currency>' --all --refresh-profile`.
+2. Resolve the currency's `DestinyInventoryItemDefinition.inventory.maxStackSize`; do not hard-code the cap. Compute `headroom = maxStackSize - currentBalance` and stop before any write when the requested amount exceeds the headroom.
+3. Enumerate live claimable currency slots and deduplicate them by `(seasonHash, seasonPassHash, rewardIndex)`. Prefer ended passes because `ClaimReward` is documented for ended seasons; do not mix in a current pass unless the current first-party implementation confirms that path.
+4. Solve an exact subset sum over slot quantities. Optimize in this order: exact requested total, fewest POST requests, then the fewest distinct ended passes. Do not approximate the amount without user approval.
+5. Present the planned slot quantities and expected final balance when the user asks to plan or review. If the user directly authorizes an exact currency and amount, that selection is sufficient to execute the deterministic slot plan; do not broaden it to other items or a larger amount.
+6. Immediately before execution, refresh the balance and selected slot states inside the Bungie.net browser context. Abort when the balance changed enough to violate the cap or any selected slot is no longer claimable.
+7. Send claims sequentially, stop on the first error, and report the completed subtotal. Refresh both profile currencies and component `202` afterward; verify the final balance and that every completed slot changed from claimable to claimed.
+
+If no exact subset exists, report the available total and the nearest safe lower combination. Ask before changing the requested amount.
 
 ## Authorized Browser Claim
 
